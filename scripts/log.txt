@@ -1,0 +1,10 @@
+Traceback (most recent call last):
+  File "/home/ubuntu/Thesis/IsoNet/bin/isonet.py", line 402, in predict
+    predict(d_args)
+  File "/home/ubuntu/Thesis/IsoNet/bin/predict.py", line 51, in predict
+    model = tf.keras.models.load_model(args.model)
+  File "/home/ubuntu/Thesis/miniconda3/envs/isonet/lib/python3.8/site-packages/tensorflow/python/keras/saving/save.py", line 211, in load_model
+    loader_impl.parse_saved_model(filepath)
+  File "/home/ubuntu/Thesis/miniconda3/envs/isonet/lib/python3.8/site-packages/tensorflow/python/saved_model/loader_impl.py", line 111, in parse_saved_model
+    raise IOError("SavedModel file does not exist at: %s/{%s|%s}" %
+OSError: SavedModel file does not exist at: results/model_iter19.h5/{saved_model.pbtxt|saved_model.pb}
