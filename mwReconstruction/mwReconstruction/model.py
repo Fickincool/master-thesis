@@ -6,6 +6,7 @@ import scipy.io as io
 import torch.nn.functional as F
 from torch.autograd import Function
 from mwReconstruction.masking import make_N_neg_matrix, make_symmatrix
+import pandas as pd
 
 
 class ConvDic(nn.Module):
@@ -49,7 +50,7 @@ class GCN(nn.Module):
     "Graph Convolutional Network with attention"
 
     def __init__(self, in_channels):
-        super(GCN, self).__init__()
+        super().__init__()
         self.inc = in_channels
         self.conv1 = ConvDic(1, self.inc)
         self.conv2 = ConvDic(self.inc, self.inc)
@@ -57,19 +58,32 @@ class GCN(nn.Module):
         self.att = GraphAttentionLayer(self.inc)
         self.relu = nn.ELU()
 
-    def forward(
-        self,
-        x_neg,
-        hier_mask_neg,
-        N_neg,
-        mask_ind_neg,
-        weight_matrix_neg,
-        mask_ind,
-        m,
-        n,
-        aver,
-        k_neighbors,
-    ):
+    def neg2full_spectrum(self, x_neg, m, n, aver):
+
+        r = m+1 if m%2==0 else m
+        s = n+1 if n%2==0 else n
+
+        d = x_neg.device
+
+        aux_symmatrix = make_symmatrix(s, r)
+        aux_symmask = torch.from_numpy(aux_symmatrix).float().to(d)
+        
+        x_neg = x_neg.repeat(2)[0:(aux_symmask==-1).sum()]
+
+        new_img = (aux_symmask).type(torch.complex128).to(d)
+        new_img[torch.where(aux_symmask==-1)] = x_neg.type(torch.complex128)
+
+        new_img = torch.flip(new_img, [0, 1])
+
+        new_img[torch.where(new_img==1)] = torch.conj(x_neg).type(torch.complex128)
+        new_img = torch.flip(new_img, [1, 0])
+
+        new_img[r//2, s//2] = aver
+
+        return new_img[0:m, 0:n]
+
+
+    def forward( self, x_neg, N_neg, m, n, aver):
         """
         Inputs
         -----------------------------
@@ -85,104 +99,65 @@ class GCN(nn.Module):
         - k_neighbors:
 
         Logic:
-        1. Perform nonlinear transformation of x_neg separately for real and imaginary parts
-        2. Second linear transformation
-        3. Run attention layer
-        4. Select neighbors (?)
-        5. Reduce
-        6. Concatenate
         """
+
         x_neg = self.conv1(x_neg)
         x_neg = self.relu(x_neg.real) + 1j * self.relu(x_neg.imag)
         x_neg = self.conv2(x_neg)
-        L_neg = self.att(Wh_neg=x_neg, N_neg=N_neg, k_neighbors=k_neighbors)
+        # L_neg = self.att(Wh_neg=x_neg, N_neg=N_neg, k_neighbors=k_neighbors)
 
-        mystery_array0 = x_neg[N_neg[1:, :].reshape(-1), :].reshape(
-            k_neighbors, -1, self.inc
-        )
-        xc_neg = torch.einsum("knc,kn->knc", (mystery_array0, L_neg,),).sum(0)
-
-        mystery_array1 = (
-            torch.masked_select(x_neg.permute(1, 0), hier_mask_neg == 1)
-            .reshape(self.inc, -1)
-            .permute(1, 0)
-        )
-        x_neg = torch.cat((xc_neg, mystery_array1,), 0,).index_select(0, mask_ind_neg)
+        # update message: sum all neighbors for each index
+        message_tensor = torch.cat((x_neg, torch.zeros(1, self.inc).to(x_neg.device)))[N_neg]
+        x_neg = message_tensor.sum(1)
 
         x_neg = self.conv3(x_neg)
-        x_out = (
-            torch.cat((x_neg, aver, torch.flip(torch.conj(x_neg), [0])), 0)
-            .index_select(0, mask_ind)
-            .reshape(m, n)
-        )
+
+        x_out = self.neg2full_spectrum(x_neg.squeeze(), m, n, aver)
 
         return x_out
 
 
 class MGNNds(nn.Module):
     def __init__(self, xc, weight_matrix, outlier_mask):
-        super(MGNNds, self).__init__()
+        super().__init__()
         self.xc = xc
         self.weight_matrix = weight_matrix
         self.outlier_mask = outlier_mask
 
         _shape = xc.shape
+        d = xc.device
 
         symmatrix = make_symmatrix(_shape[1], _shape[0])  # this is an np.array
+        neg_mask = (symmatrix == -1).astype(int)
 
-        # make masks on initialization (TODO: write matrices to files and just read, maybe much faster. Or run in parallel)
-        aux_neg = make_N_neg_matrix(
+        # make masks on initialization (TODO: Maybe precalculate.)
+        N_neg = make_N_neg_matrix(
             dr=3,
-            neg_mask=(symmatrix == -1).astype(int),
+            neg_mask=neg_mask,
             power_mask=self.outlier_mask.cpu().numpy(),
-        ).to_numpy()
-        self.N_neg = torch.from_numpy(aux_neg.transpose(1, 0)).long().cuda()
-        self.symmask = torch.from_numpy(symmatrix).float().cuda()
+            n_neighbors=64
+        ).fillna(-1).to_numpy()
 
-        self.k_neighbors = self.N_neg.size(0) - 1
+        self.N_neg = torch.from_numpy(N_neg).long().to(d)
+        self.symmask = torch.from_numpy(symmatrix).float().to(d)
+
+        self.k_neighbors = self.N_neg.size(1) - 1
         self.MGNN1 = GCN(32)
         self.conv1 = ConvDic(1, 32)
 
     def forward(self, xc, weight_matrix, outlier_mask):
+
         xcf = fft.fftshift(fft.fft2(xc))
         m, n = xcf.size()
         x0_neg = torch.masked_select(xcf, self.symmask == -1).unsqueeze(1)
-        hier_mask = ((weight_matrix > 0.2) | (outlier_mask == 1)).float()
-        hier_mask_neg = torch.masked_select(hier_mask, self.symmask == -1)
+        hier_mask_neg = torch.masked_select(outlier_mask, self.symmask == -1)
         weight_matrix_neg = torch.masked_select(weight_matrix, self.symmask == -1)
 
-        _, mask_ind = torch.sort(
-            torch.cat(
-                [
-                    torch.where(self.symmask.reshape(-1) == index)[0]
-                    for index in [-1, 0, 1]
-                ]
-            )
-        )
-        _, mask_ind_neg = torch.sort(
-            torch.cat(
-                [
-                    torch.where(hier_mask_neg.reshape(-1) == index)[0]
-                    for index in range(2)
-                ]
-            )
-        )
-        N_neg = self.N_neg[:, hier_mask_neg == 0]
+        x = self.MGNN1(x0_neg, self.N_neg, m, n, self.xc.sum())
 
-        x = self.MGNN1(
-            x_neg=x0_neg,
-            hier_mask_neg=hier_mask_neg,
-            N_neg=N_neg,
-            mask_ind_neg=mask_ind_neg,
-            weight_matrix_neg=weight_matrix_neg,
-            mask_ind=mask_ind,
-            m=m,
-            n=n,
-            aver=xc.sum().reshape(1, 1),
-            k_neighbors=self.k_neighbors,
-        )
         recon = fft.ifft2(fft.ifftshift((x))).real
         stripe = xc - recon
 
         stripe = stripe - stripe.max()
+
         return recon, x, xc - stripe, stripe

@@ -89,6 +89,8 @@ class destripeDataSet(Dataset):
         data = np.concatenate((data, outlier_mask), 1)
         data = np.concatenate((data, weight_matrix), 1)
 
+        # maybe turn this off at some point to work on the entire image
+        data = data[len(data)//2:len(data)//2+1]
 
         self.x_data = torch.from_numpy(data).float()
         self.y_data = torch.from_numpy(np.zeros((3, 1))).float()

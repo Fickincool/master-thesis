@@ -49,33 +49,27 @@ class HessianLoss(nn.Module):
 
 class Loss(nn.Module):
     def __init__(self):
-        super(Loss, self).__init__()
+        super().__init__()
         # path = os.path.join(PARENT_PATH, 'destripe/Data/')
         self.lr = nn.MSELoss(reduction="sum")
         self.li = nn.MSELoss(reduction="sum")
-        # self.TotalVariationRegularizationLoss = TotalVariationRegularizationLoss(1)
-        self.HessianLoss = HessianLoss(1, path)
+        self.TotalVariationRegularizationLoss = TotalVariationRegularizationLoss(1)
+        # self.HessianLoss = HessianLoss(1, path)
         self.l = ssim
-        self.original = torch.from_numpy(
-            h5py.File(path + "original.mat", "r")["datas"][:][0, :, :]
-            .astype("float32")
-            .transpose(1, 0)
-        ).cuda()
 
     def forward(self, x, target, hier_mask, xf):
-        # tv = self.TotalVariationRegularizationLoss(x.unsqueeze(1))
-        hessian = self.HessianLoss(x.unsqueeze(0), target.unsqueeze(0))
-        sim = self.l(
-            x.squeeze().unsqueeze(0).unsqueeze(0),
-            torch.log10(self.original).squeeze().unsqueeze(0).unsqueeze(0),
-        )
+        tv = self.TotalVariationRegularizationLoss(x.unsqueeze(1))
+        # hessian = self.HessianLoss(x.unsqueeze(0), target.unsqueeze(0))
+        # sim = self.l(
+        #     x.squeeze().unsqueeze(0).unsqueeze(0),
+        #     torch.log10(self.original).squeeze().unsqueeze(0).unsqueeze(0),
+        # )
         target = fft.fftshift(fft.fft2(target))
-        # mse1 = self.lr(xf.real*hier_mask, target.real*hier_mask)+self.lr(x1f.real*hier_mask, target.real*hier_mask)+self.lr(x2f.real*hier_mask, target.real*hier_mask)
-        # mse2 = self.li(xf.imag*hier_mask, target.imag*hier_mask)+self.li(x1f.imag*hier_mask, target.imag*hier_mask)+self.li(x2f.imag*hier_mask, target.imag*hier_mask)
+        
         mse1 = self.lr(xf.real, target.real)
         mse2 = self.li(xf.imag, target.imag)
 
         # xx = x[:, :-1, :] - x[:, 1:, :]
         # torch.abs(xx[:, :-1, :] - xx[:, 1:, :])
 
-        return mse1 + mse2
+        return mse1 + mse2 + tv, tv, mse1

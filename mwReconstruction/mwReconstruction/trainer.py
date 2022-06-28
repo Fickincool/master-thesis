@@ -22,7 +22,11 @@ def train(model, train_loader, optimizer, lossf, epoch):
             xc=data[0, :, :], weight_matrix=data[2, :, :], outlier_mask=data[1, :, :]
         )
 
-        loss, tv, sim = lossf(x, data[0, :, :], data[1, :, :], xf)
+        x = x.to(torch.double)
+        target = data[0, :, :].to(torch.double)
+        outlier_mask = data[1, :, :].to(torch.double)
+        
+        loss, tv, sim = lossf(x, target, outlier_mask, xf)
         loss.backward()
         # print(model.MGNN1.conv1.conv1.weight.grad)
         # print(model.MGNN1.conv1.conv1.conv_r.weight.grad)
