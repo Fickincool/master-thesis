@@ -10,6 +10,11 @@ class singleCET_dataset(Dataset):
 
         The dataset consists of subtomograms of shape [n_samples, s, s, s] 
         where n_samples is the number of Bernoulli samples and s is the subtomogram side length.
+
+        - tomo_path: tomogram path
+        - subtomo_length: side length of the patches to be used for training
+        - n_samples: number of independent bernoulli samples
+        - p: probability of an element to be zeroed
         """
         self.tomo_path = tomo_path
         self.data = torch.tensor(read_array(tomo_path))
@@ -41,7 +46,7 @@ class singleCET_dataset(Dataset):
         
         # first transform and then get samples
         if self.transform:
-            sample = self.transform(subtomo)
+            subtomo = self.transform(subtomo)
 
         # bernoulli mask with no power correction from the dropout
         bernoulli_mask = torch.stack([self.dropout(torch.ones_like(subtomo))*(1-self.p) for i in range(self.n_samples)], axis=0)

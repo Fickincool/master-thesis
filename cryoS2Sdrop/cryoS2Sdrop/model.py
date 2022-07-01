@@ -13,7 +13,7 @@ from tomoSegmentPipeline.losses import Tversky_index
 class Denoising_UNet(pl.LightningModule):
     def __init__(self, loss_fn, lr, n_samples, n_features, p):
         super().__init__()
-        self.loss = loss_fn
+        self.loss_fn = loss_fn
         self.lr = lr
         self.n_features = n_features
         self.n_samples = n_samples
@@ -117,3 +117,27 @@ class Denoising_UNet(pl.LightningModule):
             nn.LeakyReLU()
         )
         return layer
+
+    def configure_optimizers(self):
+        optimizer = torch.optim.Adam(self.parameters(), lr=self.lr, betas=(0.9, 0.999), eps=1e-8)
+        factor = 0.1
+
+        return {
+        "optimizer": optimizer,
+        "lr_scheduler": {
+            "scheduler": ReduceLROnPlateau(optimizer, 'min', verbose=True, patience=15, min_lr=1e-7, factor=factor),
+            "monitor": "hp/train_loss_epoch",
+            "frequency": 1
+            # If "monitor" references validation metrics, then "frequency" should be set to a
+            # multiple of "trainer.check_val_every_n_epoch".
+            },
+        }
+
+    def training_step(self, batch):
+        bernoulli_subtomo, target, bernoulli_mask = batch
+        pred = (1-bernoulli_mask)*self(bernoulli_subtomo)
+        loss = self.loss_fn(pred, target)
+
+        self.log("hp/train_loss", loss, on_step=True, on_epoch=True, prog_bar=True, sync_dist=True)
+
+        return loss
