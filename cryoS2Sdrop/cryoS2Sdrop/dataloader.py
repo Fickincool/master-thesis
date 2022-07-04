@@ -58,11 +58,25 @@ class singleCET_dataset(Dataset):
         return bernoulli_subtomo, target, bernoulli_mask
 
     def create_grid(self):
-        """Create a equispaced grid for a tomogram"""
+        """Create a possibly overlapping set of patches forming a grid that covers a tomogram"""
+        dist_center = self.subtomo_length//2 # size from center
         centers = []
-        for length in self.tomo_shape:
-            centers.append(np.arange(self.subtomo_length//2, length - self.subtomo_length//2, self.subtomo_length))
-        
+        for i, coord in enumerate(self.tomo_shape):
+
+            n_centers = int(np.ceil(coord/self.subtomo_length))
+            _centers = np.linspace(dist_center, coord-dist_center, n_centers, dtype=int)
+            
+            startpoints, endpoints = _centers-dist_center, _centers+dist_center
+            overlap_ratio = max(endpoints[:-1]-startpoints[1::])/dist_center
+
+            centers.append(_centers)
+            
+            if overlap_ratio<0:
+                raise ValueError('The tomogram is not fully covered in dimension %i.' %i)
+                
+            if overlap_ratio>0.5:
+                raise ValueError('There is too much overlap between patches in dimension %i.' %i)
+
         zs, ys, xs = np.meshgrid(*centers, indexing='ij')
         grid = list(zip(zs.flatten(), ys.flatten(), xs.flatten()))
         

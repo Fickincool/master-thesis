@@ -1,5 +1,4 @@
 import os
-import dill as pickle
 from cryoS2Sdrop.dataloader import singleCET_dataset
 from cryoS2Sdrop.model import Denoising_UNet
 from cryoS2Sdrop.losses import self2self_L2Loss
@@ -39,7 +38,9 @@ class denoisingTrainer():
         my_dataset = singleCET_dataset(self.cet_path, subtomo_length=self.subtomo_length, p=self.p,
         n_samples=self.n_bernoulli_samples)
 
-        train_loader = DataLoader(my_dataset, batch_size=batch_size, shuffle=True, pin_memory=True)
+        print('Size of dataset: %i, Steps per epoch: %i. \n' %(len(my_dataset), len(my_dataset)/(batch_size*num_gpus)))
+
+        train_loader = DataLoader(my_dataset, batch_size=batch_size, shuffle=False, pin_memory=True)
 
         logger = pl_loggers.TensorBoardLogger(self.tensorboard_logdir, name='',  default_hp_metric=False)
 
@@ -54,31 +55,23 @@ class denoisingTrainer():
 
         trainer.fit(self.model, train_loader)
 
-        if trainer.is_global_zero:
-            name_model = '%s_ep%i_subtomoLen%i_lr%f_version.model' %(self.model_name, epochs, self.subtomo_length, self.lr)
-            self.save_model(name_model)   
+        # if trainer.is_global_zero:
+        #     name_model = '%s_ep%i_subtomoLen%i_lr%f.model' %(self.model_name, epochs, self.subtomo_length, self.lr)
+        #     self.save_model(name_model)   
 
         return
 
+    # def save_model(self, name_model):
+    #     "Save the trained model in the path_model folder."
 
-    def save_model(self, name_model):
-        "Save the trained model in the path_model folder."
-
-        # Last version is the one currently being logged
-        version = self.model.logger.version
-        name_model = name_model.replace('_version', '_%s' %version)
-        path_model = self.model.logger.log_dir
-        if not os.path.exists(path_model):
-            os.mkdir(path_model)
+    #     # Last version is the one currently being logged
+    #     path_model = self.model.logger.log_dir
+    #     if not os.path.exists(path_model):
+    #         os.mkdir(path_model)
             
-        name_model = os.path.join(path_model, name_model)
-        print('Saving model at: ', name_model)
-        torch.save(self.model.state_dict(), name_model)
+    #     name_model = os.path.join(path_model, name_model)
+    #     print('Saving model at: ', name_model)
+    #     torch.save(self.model.state_dict(), name_model)
 
-        # trainer_name = os.path.join(path_model, name_model.replace('.model', '_trainer.pkl'))
-
-        # with open(trainer_name, 'wb') as file:
-        #     pickle.dump(self, file)
-
-        return
+    #     return
 

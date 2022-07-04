@@ -1,14 +1,10 @@
 import numpy as np
 import torch
 from torch import nn
-import torch.nn.functional as F
-from torch.utils.data import DataLoader, random_split
 import pytorch_lightning as pl
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 from cryoS2Sdrop.partialconv3d import PartialConv3d
-
-from tomoSegmentPipeline.losses import Tversky_index
 
 class Denoising_UNet(pl.LightningModule):
     def __init__(self, loss_fn, lr, n_samples, n_features, p):
@@ -18,6 +14,7 @@ class Denoising_UNet(pl.LightningModule):
         self.n_features = n_features
         self.n_samples = n_samples
         self.p = p
+        self.save_hyperparameters()
 
         # Encoder blocks
         self.EB1 = PartialConv3d(n_samples, self.n_features, kernel_size=3, padding=1)
@@ -125,7 +122,7 @@ class Denoising_UNet(pl.LightningModule):
         return {
         "optimizer": optimizer,
         "lr_scheduler": {
-            "scheduler": ReduceLROnPlateau(optimizer, 'min', verbose=True, patience=15, min_lr=1e-7, factor=factor),
+            "scheduler": ReduceLROnPlateau(optimizer, 'min', verbose=True, patience=10, min_lr=1e-7, factor=factor),
             "monitor": "hp/train_loss_epoch",
             "frequency": 1
             # If "monitor" references validation metrics, then "frequency" should be set to a
