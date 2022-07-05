@@ -1,6 +1,6 @@
 from cryoS2Sdrop.model import Denoising_UNet
 import torch
-import tqdm
+from tqdm import tqdm
 
 
 

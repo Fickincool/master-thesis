@@ -16,7 +16,7 @@ tensorboard_logdir = os.path.join(PARENT_PATH, 'data/S2SDenoising/model_logs')
 
 batch_size = 8
 epochs = 700
-lr = 5e-4
+lr = 1e-4
 num_gpus = 2
 
 s2s_trainer = denoisingTrainer(cet_path, subtomo_length, lr, n_bernoulli_samples, n_features, p, tensorboard_logdir)
