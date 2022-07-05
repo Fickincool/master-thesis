@@ -40,7 +40,7 @@ class denoisingTrainer():
 
         print('Size of dataset: %i, Steps per epoch: %i. \n' %(len(my_dataset), len(my_dataset)/(batch_size*num_gpus)))
 
-        train_loader = DataLoader(my_dataset, batch_size=batch_size, shuffle=False, pin_memory=True)
+        train_loader = DataLoader(my_dataset, batch_size=batch_size, shuffle=True, pin_memory=True)
 
         logger = pl_loggers.TensorBoardLogger(self.tensorboard_logdir, name='',  default_hp_metric=False)
 
