@@ -31,6 +31,13 @@ class denoisingTrainer():
         self.tensorboard_logdir = tensorboard_logdir
         self.model_name = 's2sUNet'
 
+        self.run_init_asserts()
+
+        return
+
+    def run_init_asserts(self):
+        if self.subtomo_length%32 != 0:
+            raise ValueError('Length of subtomograms must be a multiple of 32 to run the network.')
         return
 
     def train(self, batch_size, epochs, num_gpus, accelerator="gpu", strategy="ddp"):
