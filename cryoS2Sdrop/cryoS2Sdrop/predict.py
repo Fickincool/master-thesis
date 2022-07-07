@@ -1,46 +1,53 @@
 from cryoS2Sdrop.model import Denoising_UNet
 import torch
+from torch.utils.data import DataLoader
+
 from tqdm import tqdm
 
 
 
-def load_model(ckpt_file):
+
+
+def load_model(ckpt_file, DataParallel=False):
     "Load a model from checkpoint and send to cuda."
     
-    model = Denoising_UNet.load_from_checkpoint(ckpt_file)
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    model = Denoising_UNet.load_from_checkpoint(ckpt_file).cuda()
+    if DataParallel:
+        model = torch.nn.DataParallel(model)
     
-    gpu_model = torch.nn.DataParallel(model)
-    gpu_model.to(device)
-    
-    return gpu_model
+    return model
 
-def predict_full_tomogram(singleCET_dataset, model):
+def predict_full_tomogram(singleCET_dataset, model, batch_size):
 
     tomo_shape = singleCET_dataset.tomo_shape
     subtomo_length = singleCET_dataset.subtomo_length
 
+    dloader = DataLoader(singleCET_dataset, batch_size=batch_size, shuffle=False, pin_memory=True)
+
     denoised_tomo = torch.zeros(tomo_shape)
     count_tensor = torch.zeros(tomo_shape) # for averaging overlapping patches
 
-    for idx, (subtomo, target, _) in enumerate(tqdm(singleCET_dataset)):
+    for idx, batch in enumerate(tqdm(dloader)):
         
-        subtomo, target = subtomo.unsqueeze(0), target.unsqueeze(0)
+        subtomo, _, _ = batch
         
         with torch.no_grad():
-            denoised_subtomo = model(subtomo).squeeze().mean(axis=0).cpu()
+            denoised_subtomo = model(subtomo).squeeze().mean(axis=1).cpu()
         
-        z0, y0, x0 = singleCET_dataset.grid[idx]
-        zmin, zmax = z0-subtomo_length//2, z0+subtomo_length//2
-        ymin, ymax = y0-subtomo_length//2, y0+subtomo_length//2
-        xmin, xmax = x0-subtomo_length//2, x0+subtomo_length//2
-        
-        count_tensor[zmin:zmax, ymin:ymax, xmin:xmax] += 1
-        denoised_tomo[zmin:zmax, ymin:ymax, xmin:xmax] += denoised_subtomo
+        grid_min, grid_max = idx*batch_size, (idx+1)*batch_size
+        grid_max = min(grid_max, len(singleCET_dataset))
+        for batch_idx, grid_idx in enumerate(range(grid_min, grid_max)):
+            
+            z0, y0, x0 = singleCET_dataset.grid[grid_idx]
+            zmin, zmax = z0-subtomo_length//2, z0+subtomo_length//2
+            ymin, ymax = y0-subtomo_length//2, y0+subtomo_length//2
+            xmin, xmax = x0-subtomo_length//2, x0+subtomo_length//2
+
+            count_tensor[zmin:zmax, ymin:ymax, xmin:xmax] += 1
+            denoised_tomo[zmin:zmax, ymin:ymax, xmin:xmax] += denoised_subtomo[batch_idx]
         
     # Get average predictions for overlapping patches
     denoised_tomo = denoised_tomo/count_tensor
-
     del count_tensor
 
     return denoised_tomo
