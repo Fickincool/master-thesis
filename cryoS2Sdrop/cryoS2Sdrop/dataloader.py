@@ -35,6 +35,8 @@ class singleCET_dataset(Dataset):
 
         self.run_init_asserts()
 
+        self.bernoulli_mask = self.create_Vmask() # new mask is created upon instantiation of the class
+
         return
 
     def run_init_asserts(self):
@@ -56,8 +58,9 @@ class singleCET_dataset(Dataset):
     def __len__(self):
         return len(self.grid)
 
-    def get_volumetric_blind_spots(self):
-        downsampled_shape = np.array(3*[self.subtomo_length])//self.vol_scale_factor
+    def create_Vmask(self):
+        "Create volumetric blind spot random mask"
+        downsampled_shape = np.array(self.tomo_shape)//self.vol_scale_factor
         downsampled_shape = tuple(downsampled_shape)
 
         bernoulli_Vmask = torch.stack([self.dropout(torch.ones(downsampled_shape))*(1-self.p) 
@@ -77,9 +80,8 @@ class singleCET_dataset(Dataset):
         if self.transform:
             subtomo = self.transform(subtomo)
 
-        # bernoulli mask with no power correction from the dropout
-        # bernoulli_mask = torch.stack([self.dropout(torch.ones_like(subtomo))*(1-self.p) for i in range(self.n_samples)], axis=0)
-        bernoulli_mask = self.get_volumetric_blind_spots()
+        ##### Bernoulli masks are fixed for the dataset
+        bernoulli_mask = self.bernoulli_mask[:, z_min:z_max, y_min:y_max, x_min:x_max]
 
         _samples = subtomo.unsqueeze(0).repeat(self.n_samples, 1, 1, 1) # get n samples
         bernoulli_subtomo = bernoulli_mask*_samples  # bernoulli samples

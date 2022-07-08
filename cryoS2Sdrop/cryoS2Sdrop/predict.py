@@ -1,21 +1,26 @@
 from cryoS2Sdrop.model import Denoising_UNet
 import torch
 from torch.utils.data import DataLoader
-
+import yaml
 from tqdm import tqdm
+from glob import glob
 
 
+def load_model(logdir, DataParallel=False):
+    "Returns loaded model from checkpoint and hyperparameters"
 
+    with open(glob(logdir+'hparams.yaml')[0]) as f:
+        hparams = yaml.load(f, Loader=yaml.BaseLoader)
 
-
-def load_model(ckpt_file, DataParallel=False):
-    "Load a model from checkpoint and send to cuda."
+    ckpt_file = glob(logdir+'checkpoints/*.ckpt')
+    assert len(glob(logdir+'checkpoints/*.ckpt'))==1
+    ckpt_file = ckpt_file[0]
     
     model = Denoising_UNet.load_from_checkpoint(ckpt_file).cuda()
     if DataParallel:
         model = torch.nn.DataParallel(model)
     
-    return model
+    return model, hparams
 
 def predict_full_tomogram(singleCET_dataset, model, batch_size):
 

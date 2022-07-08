@@ -16,7 +16,7 @@ n_features = 48
 
 tensorboard_logdir = os.path.join(PARENT_PATH, 'data/S2SDenoising/model_logs')
 
-batch_size = 2
+batch_size = 4
 epochs = 250
 lr = 1e-4
 num_gpus = 2
