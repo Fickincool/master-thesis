@@ -7,17 +7,22 @@ from torch.optim.lr_scheduler import ReduceLROnPlateau
 from cryoS2Sdrop.partialconv3d import PartialConv3d
 
 class Denoising_UNet(pl.LightningModule):
-    def __init__(self, loss_fn, lr, n_samples, n_features, p):
+    def __init__(self, loss_fn, lr, n_features, p):
+        """Expected input: [B, C, S, S, S] where B the batch size, C input channels and S the subtomo length.
+        
+        Note: The default pytorch Dataloader yields: [B, C, S, S, S]
+        """
+
         super().__init__()
         self.loss_fn = loss_fn
         self.lr = lr
         self.n_features = n_features
-        self.n_samples = n_samples
         self.p = p
+        self.in_channels = 1
         self.save_hyperparameters()
 
         # Encoder blocks
-        self.EB1 = PartialConv3d(n_samples, self.n_features, kernel_size=3, padding=1)
+        self.EB1 = PartialConv3d(self.in_channels, self.n_features, kernel_size=3, padding=1)
         self.EB2 = self.encoder_block()
         self.EB3 = self.encoder_block()
         self.EB4 = self.encoder_block()
@@ -42,7 +47,7 @@ class Denoising_UNet(pl.LightningModule):
         return
 
     def forward(self, x:torch.Tensor):
-        "Input tensor of shape [batch_size, sample_size, tomo_side, tomo_side, tomo_side]"
+        "Input tensor of shape [batch_size, channels, tomo_side, tomo_side, tomo_side]"
         ##### ENCODER #####
         e1 = self.EB1(x) # no downsampling, n_features = 48
         e2 = self.EB2(e1) # downsample 1/2
@@ -104,13 +109,13 @@ class Denoising_UNet(pl.LightningModule):
     def decoder_block_top(self):
         layer = nn.Sequential(
             nn.Dropout(self.p),
-            nn.Conv3d(2*self.n_features+self.n_samples, 64, kernel_size=3, padding=1),
+            nn.Conv3d(2*self.n_features+self.in_channels, 64, kernel_size=3, padding=1),
             nn.LeakyReLU(),
             nn.Dropout(self.p),
             nn.Conv3d(64, 32, kernel_size=3, padding=1),
             nn.LeakyReLU(),
             nn.Dropout(self.p),
-            nn.Conv3d(32, self.n_samples, kernel_size=3, padding=1),
+            nn.Conv3d(32, self.in_channels, kernel_size=3, padding=1),
             nn.LeakyReLU()
         )
         return layer
