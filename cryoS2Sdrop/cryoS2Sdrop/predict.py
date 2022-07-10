@@ -22,6 +22,7 @@ def load_model(logdir, DataParallel=False):
     
     return model, hparams
 
+
 def predict_full_tomogram(singleCET_dataset, model, batch_size):
 
     tomo_shape = singleCET_dataset.tomo_shape
@@ -32,7 +33,7 @@ def predict_full_tomogram(singleCET_dataset, model, batch_size):
     denoised_tomo = torch.zeros(tomo_shape)
     count_tensor = torch.zeros(tomo_shape) # for averaging overlapping patches
 
-    for idx, batch in enumerate(tqdm(dloader)):
+    for idx, batch in enumerate(dloader):
         
         subtomo, _, _ = batch
         
