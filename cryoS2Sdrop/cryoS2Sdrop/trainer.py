@@ -12,19 +12,18 @@ from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 from pytorch_lightning.callbacks import LearningRateMonitor
 
 class denoisingTrainer():
-    def __init__(self, cet_path, subtomo_length, lr, n_bernoulli_samples, n_features, p, tensorboard_logdir):
+    def __init__(self, cet_path, subtomo_length, lr, n_features, p, tensorboard_logdir):
         super().__init__()
 
         # Hardcoded
         self.loss_fn = self2self_L2Loss()
-        self.model = Denoising_UNet(self.loss_fn, lr, n_bernoulli_samples, n_features, p)
+        self.model = Denoising_UNet(self.loss_fn, lr, n_features, p)
 
         # model and training stuff
         self.cet_path = cet_path
         self.lr = lr
         self.subtomo_length = subtomo_length  
         self.p = p
-        self.n_bernoulli_samples = n_bernoulli_samples
         self.n_features = n_features
 
         # logs
@@ -42,8 +41,7 @@ class denoisingTrainer():
 
     def train(self, batch_size, epochs, num_gpus, accelerator="gpu", strategy="ddp"):
 
-        my_dataset = singleCET_dataset(self.cet_path, subtomo_length=self.subtomo_length, p=self.p,
-        n_samples=self.n_bernoulli_samples)
+        my_dataset = singleCET_dataset(self.cet_path, subtomo_length=self.subtomo_length, p=self.p)
 
         print('Size of dataset: %i, Steps per epoch: %i. \n' %(len(my_dataset), len(my_dataset)/(batch_size*num_gpus)))
 

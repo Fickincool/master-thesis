@@ -5,16 +5,15 @@ from torch.utils.data import Dataset
 from tomoSegmentPipeline.utils.common import read_array
 
 class singleCET_dataset(Dataset):
-    def __init__(self, tomo_path, subtomo_length, p, n_samples, volumetric_scale_factor=8, transform=None):  
+    def __init__(self, tomo_path, subtomo_length, p, volumetric_scale_factor=8, transform=None):  
         """
         Load cryoET dataset for self2self denoising.
 
-        The dataset consists of subtomograms of shape [n_samples, s, s, s] 
-        where n_samples is the number of Bernoulli samples and s is the subtomogram side length.
+        The dataset consists of subtomograms of shape [C, S, S, S] C (equal to 1) is the number of channels and 
+        S is the subtomogram side length.
 
         - tomo_path: tomogram path
         - subtomo_length: side length of the patches to be used for training
-        - n_samples: number of independent bernoulli samples
         - p: probability of an element to be zeroed
         - volumetric_scale_factor: times the original tomogram shape will be reduced 
         to take bernoulli point samples before upsampling into volumetric bernoulli blind spots.
@@ -30,12 +29,12 @@ class singleCET_dataset(Dataset):
         self.p = p
         self.dropout = torch.nn.Dropout(p=p)
         self.upsample = torch.nn.Upsample(scale_factor=volumetric_scale_factor)
-        self.n_samples = n_samples
         self.vol_scale_factor = volumetric_scale_factor
+        self.channels = 1
 
         self.run_init_asserts()
 
-        self.bernoulli_mask = self.create_Vmask() # new mask is created upon instantiation of the class
+        # self.bernoulli_mask = self.create_Vmask() # new mask is created upon instantiation of the class
 
         return
 
@@ -60,13 +59,15 @@ class singleCET_dataset(Dataset):
 
     def create_Vmask(self):
         "Create volumetric blind spot random mask"
-        downsampled_shape = np.array(self.tomo_shape)//self.vol_scale_factor
+        downsampled_shape = np.array(3*[self.subtomo_length])//self.vol_scale_factor
         downsampled_shape = tuple(downsampled_shape)
 
-        bernoulli_Vmask = torch.stack([self.dropout(torch.ones(downsampled_shape))*(1-self.p) 
-        for i in range(self.n_samples)], axis=0)
-        bernoulli_Vmask = bernoulli_Vmask.unsqueeze(0)
-        bernoulli_Vmask = self.upsample(bernoulli_Vmask).squeeze()
+        # avoid power correction from dropout and set shape for upsampling
+        bernoulli_Vmask = self.dropout(torch.ones(downsampled_shape))*(1-self.p)
+        bernoulli_Vmask = bernoulli_Vmask.unsqueeze(0).unsqueeze(0)
+        # make final shape [C, S, S, S]
+        bernoulli_Vmask = self.upsample(bernoulli_Vmask).squeeze(0)
+
         return bernoulli_Vmask
 
     def __getitem__(self, index:int):
@@ -80,10 +81,10 @@ class singleCET_dataset(Dataset):
         if self.transform:
             subtomo = self.transform(subtomo)
 
-        ##### Bernoulli masks are fixed for the dataset
-        bernoulli_mask = self.bernoulli_mask[:, z_min:z_max, y_min:y_max, x_min:x_max]
+        ##### One different mask per __getitem__ call
+        bernoulli_mask = self.create_Vmask()
 
-        _samples = subtomo.unsqueeze(0).repeat(self.n_samples, 1, 1, 1) # get n samples
+        _samples = subtomo.unsqueeze(0)
         bernoulli_subtomo = bernoulli_mask*_samples  # bernoulli samples
         target = (1-bernoulli_mask)*_samples # complement of the bernoulli sample
 
