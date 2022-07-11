@@ -33,10 +33,9 @@ class singleCET_dataset(Dataset):
         self.upsample = torch.nn.Upsample(scale_factor=volumetric_scale_factor)
         self.vol_scale_factor = volumetric_scale_factor
         self.channels = 1
+        self.Vmask_probability = 0.1 # otherwise use Pmask
 
         self.run_init_asserts()
-
-        # self.bernoulli_mask = self.create_Vmask() # new mask is created upon instantiation of the class
 
         return
 
@@ -106,7 +105,7 @@ class singleCET_dataset(Dataset):
             subtomo = self.transform(subtomo)
 
         ##### One different mask per __getitem__ call
-        if np.random.uniform() < 0.3:
+        if np.random.uniform() < self.Vmask_probability:
             # might work as an augmentation technique.
             bernoulli_mask = self.create_Vmask()
         else:
@@ -167,3 +166,6 @@ class randomRotation3D(object):
             subtomo = torch.rot90(subtomo, k=k, dims=(1, 2))
 
         return subtomo
+
+    def __repr__(self):
+        return repr("randomRotation3D with probability %.02f" %self.p)

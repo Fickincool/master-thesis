@@ -1,7 +1,8 @@
 import os
+import yaml
 from cryoS2Sdrop.dataloader import singleCET_dataset
 from cryoS2Sdrop.model import Denoising_UNet
-from cryoS2Sdrop.losses import self2self_L2Loss
+from cryoS2Sdrop.losses import self2self_L2Loss, self2selfLoss
 
 from torch.utils.data import DataLoader
 import torch
@@ -96,22 +97,14 @@ class denoisingTrainer:
 
         trainer.fit(self.model, train_loader)
 
-        # if trainer.is_global_zero:
-        #     name_model = '%s_ep%i_subtomoLen%i_lr%f.model' %(self.model_name, epochs, self.subtomo_length, self.lr)
-        #     self.save_model(name_model)
+        #### Log additional hyperparameters #####
+        hparams_file = os.path.join(self.tensorboard_logdir, 'version_%i' %self.model.logger.version)
+        hparams_file = os.path.join(hparams_file, 'hparams.yaml')
+
+        extra_hparams = {'transform':transform, 'singleCET_dataset.Vmask_probability':my_dataset.Vmask_probability}
+        sdump = yaml.dump(extra_hparams)
+
+        with open(hparams_file, "a") as fo:
+            fo.write(sdump)
 
         return
-
-    # def save_model(self, name_model):
-    #     "Save the trained model in the path_model folder."
-
-    #     # Last version is the one currently being logged
-    #     path_model = self.model.logger.log_dir
-    #     if not os.path.exists(path_model):
-    #         os.mkdir(path_model)
-
-    #     name_model = os.path.join(path_model, name_model)
-    #     print('Saving model at: ', name_model)
-    #     torch.save(self.model.state_dict(), name_model)
-
-    #     return

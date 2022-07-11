@@ -14,11 +14,11 @@ p=0.3 # dropout probability
 subtomo_length = 128
 n_features = 48
 
-tensorboard_logdir = os.path.join(PARENT_PATH, 'data/S2SDenoising/tryout_model_logs')
+tensorboard_logdir = os.path.join(PARENT_PATH, 'data/S2SDenoising/model_logs')
 
 batch_size = 4
-epochs = 100
-lr = 1e-5
+epochs = 700
+lr = 1e-4
 num_gpus = 2
 
 transform = randomRotation3D(0.5)

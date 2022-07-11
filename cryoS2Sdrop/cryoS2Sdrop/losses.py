@@ -45,7 +45,7 @@ def total_variation3D(img: torch.Tensor) -> torch.Tensor:
         raise TypeError(f"Input type is not a torch.Tensor. Got {type(img)}")
 
     if len(img.shape) < 4 or len(img.shape) > 5:
-        raise ValueError(f"Expected input tensor to be of ndim 3 or 4, but got {len(img.shape)}.")
+        raise ValueError(f"Expected input tensor to be of ndim 4 or 5, but got {len(img.shape)}.")
 
     pixel_dif1 = img[..., 1:, :, :] - img[..., :-1, :, :]
     pixel_dif2 = img[..., :, 1:, :] - img[..., :, :-1, :]
@@ -81,3 +81,18 @@ class TotalVariation(torch.nn.Module):
 
     def forward(self, img) -> torch.Tensor:
         return total_variation3D(img)
+
+class self2selfLoss(torch.nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.l2 = self2self_L2Loss()
+        self.total_variation = TotalVariation()
+
+    def forward(self, y_wedge, y_hat):
+        """
+        Tensors of shape: [B, C, S, S, S]
+        The loss is only considered in the pixels that are masked from the beginning.
+        - y_wedge: (1-bernoulli_mask)*model(bernoulli_subtomo)
+        - y_hat: (1-bernoulli_mask)*subtomo
+        """
+        return self.l2(y_wedge, y_hat) + 1e-4*self.total_variation(y_wedge).mean(0)
