@@ -97,14 +97,15 @@ class denoisingTrainer:
 
         trainer.fit(self.model, train_loader)
 
-        #### Log additional hyperparameters #####
-        hparams_file = os.path.join(self.tensorboard_logdir, 'version_%i' %self.model.logger.version)
-        hparams_file = os.path.join(hparams_file, 'hparams.yaml')
+        if trainer.is_global_zero:
+            #### Log additional hyperparameters #####
+            hparams_file = os.path.join(self.tensorboard_logdir, 'version_%i' %self.model.logger.version)
+            hparams_file = os.path.join(hparams_file, 'hparams.yaml')
 
-        extra_hparams = {'transform':transform, 'singleCET_dataset.Vmask_probability':my_dataset.Vmask_probability}
-        sdump = yaml.dump(extra_hparams)
+            extra_hparams = {'transform':transform, 'singleCET_dataset.Vmask_probability':my_dataset.Vmask_probability}
+            sdump = yaml.dump(extra_hparams)
 
-        with open(hparams_file, "a") as fo:
-            fo.write(sdump)
+            with open(hparams_file, "a") as fo:
+                fo.write(sdump)
 
         return
