@@ -7,7 +7,7 @@ from cryoS2Sdrop.dataloader import randomRotation3D
 PARENT_PATH = setup.PARENT_PATH
 
 # cet_path = os.path.join(PARENT_PATH, 'data/raw_cryo-ET/tomo02.mrc') 
-cet_path = os.path.join(PARENT_PATH, 'data/S2SDenoising/dummy_tomograms/tomo02_dummy.mrc')
+cet_path = os.path.join(PARENT_PATH, 'data/S2SDenoising/dummy_tomograms/tomo04_deconvDummy.mrc')
 
 
 p=0.3 # dropout probability
