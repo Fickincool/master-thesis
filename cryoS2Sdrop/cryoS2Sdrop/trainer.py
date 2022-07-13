@@ -2,7 +2,6 @@ import os
 import yaml
 from cryoS2Sdrop.dataloader import singleCET_dataset
 from cryoS2Sdrop.model import Denoising_UNet
-from cryoS2Sdrop.losses import self2self_L2Loss, self2selfLoss
 
 from torch.utils.data import DataLoader
 import torch
@@ -14,11 +13,11 @@ from pytorch_lightning.callbacks import LearningRateMonitor
 
 
 class denoisingTrainer:
-    def __init__(self, cet_path, subtomo_length, lr, n_features, p, tensorboard_logdir):
+    def __init__(self, cet_path, subtomo_length, lr, n_features, p, tensorboard_logdir, loss_fn):
         super().__init__()
 
         # Hardcoded
-        self.loss_fn = self2self_L2Loss()
+        self.loss_fn = loss_fn
         self.model = Denoising_UNet(self.loss_fn, lr, n_features, p)
 
         # model and training stuff

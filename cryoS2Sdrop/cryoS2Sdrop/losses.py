@@ -83,16 +83,18 @@ class TotalVariation(torch.nn.Module):
         return total_variation3D(img)
 
 class self2selfLoss(torch.nn.Module):
-    def __init__(self):
+    def __init__(self, alpha=1e-4):
         super().__init__()
         self.l2 = self2self_L2Loss()
         self.total_variation = TotalVariation()
+        self.alpha = alpha
 
-    def forward(self, y_wedge, y_hat):
+    def forward(self, subtomo, subtomo_pred, target, mask):
         """
         Tensors of shape: [B, C, S, S, S]
-        The loss is only considered in the pixels that are masked from the beginning.
+        The L2loss is only considered in the pixels that are masked from the beginning.
         - y_wedge: (1-bernoulli_mask)*model(bernoulli_subtomo)
-        - y_hat: (1-bernoulli_mask)*subtomo
+        - target: (1-bernoulli_mask)*subtomo
         """
-        return self.l2(y_wedge, y_hat) + 1e-4*self.total_variation(y_wedge).mean(0)
+        y_wedge = (1-mask)*subtomo_pred
+        return self.l2(y_wedge, target) + self.alpha*self.total_variation(subtomo_pred+subtomo).mean(0)
