@@ -33,7 +33,7 @@ class singleCET_dataset(Dataset):
         self.upsample = torch.nn.Upsample(scale_factor=volumetric_scale_factor)
         self.vol_scale_factor = volumetric_scale_factor
         self.channels = 1
-        self.Vmask_probability = 0.1 # otherwise use Pmask
+        self.Vmask_probability = 0 # otherwise use Pmask
 
         self.run_init_asserts()
 

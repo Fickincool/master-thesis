@@ -153,8 +153,8 @@ class Denoising_UNet(pl.LightningModule):
 
     def training_step(self, batch):
         bernoulli_subtomo, target, bernoulli_mask = batch
-        pred = (1 - bernoulli_mask) * self(bernoulli_subtomo)
-        loss = self.loss_fn(pred, target)
+        pred = self(bernoulli_subtomo)
+        loss = self.loss_fn(bernoulli_subtomo, pred, target, bernoulli_mask)
 
         self.log(
             "hp/train_loss",
