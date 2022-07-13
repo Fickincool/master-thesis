@@ -12,13 +12,13 @@ cet_path = os.path.join(PARENT_PATH, 'data/S2SDenoising/dummy_tomograms/tomo02_d
 
 
 p=0.3 # dropout probability
-subtomo_length = 128
+subtomo_length = 96
 n_features = 48
 
-tensorboard_logdir = os.path.join(PARENT_PATH, 'data/S2SDenoising/model_logs')
+tensorboard_logdir = os.path.join(PARENT_PATH, 'data/S2SDenoising/tryout_model_logs')
 
 batch_size = 4
-epochs = 500
+epochs = 50
 lr = 1e-4
 num_gpus = 2
 

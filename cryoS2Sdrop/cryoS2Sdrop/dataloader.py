@@ -35,6 +35,8 @@ class singleCET_dataset(Dataset):
         self.channels = 1
         self.Vmask_probability = 0 # otherwise use Pmask
 
+        self.n_bernoulli_samples = 6
+
         self.run_init_asserts()
 
         return
@@ -42,7 +44,7 @@ class singleCET_dataset(Dataset):
     def run_init_asserts(self):
         if self.subtomo_length % self.vol_scale_factor != 0:
             raise ValueError(
-                "Length of subtomograms must a multiple of the volumetric scale factor."
+                "Length of subtomograms must be a multiple of the volumetric scale factor."
             )
 
         return
@@ -84,6 +86,15 @@ class singleCET_dataset(Dataset):
 
         return bernoulli_Pmask
 
+    def create_bernoulliMask(self):
+        if np.random.uniform() < self.Vmask_probability:
+            # might work as an augmentation technique.
+            bernoulli_mask = self.create_Vmask()
+        else:
+            bernoulli_mask = self.create_Pmask()
+
+        return bernoulli_mask
+
     def __getitem__(self, index: int):
         center_z, center_y, center_x = self.grid[index]
         z_min, z_max = (
@@ -105,13 +116,10 @@ class singleCET_dataset(Dataset):
             subtomo = self.transform(subtomo)
 
         ##### One different mask per __getitem__ call
-        if np.random.uniform() < self.Vmask_probability:
-            # might work as an augmentation technique.
-            bernoulli_mask = self.create_Vmask()
-        else:
-            bernoulli_mask = self.create_Pmask()
+        bernoulli_mask = torch.stack([self.create_bernoulliMask() for i in range(self.n_bernoulli_samples)], axis=0)
+        
 
-        _samples = subtomo.unsqueeze(0)
+        _samples = subtomo.unsqueeze(0).repeat(self.n_bernoulli_samples, 1, 1, 1, 1) # get n samples
         bernoulli_subtomo = bernoulli_mask * _samples  # bernoulli samples
         target = (1 - bernoulli_mask) * _samples  # complement of the bernoulli sample
 

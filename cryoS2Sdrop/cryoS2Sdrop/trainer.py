@@ -65,7 +65,7 @@ class denoisingTrainer:
         )
 
         train_loader = DataLoader(
-            my_dataset, batch_size=batch_size, shuffle=True, pin_memory=True
+            my_dataset, batch_size=batch_size, shuffle=True, pin_memory=True, collate_fn=aggregate_bernoulliSamples
         )
 
         logger = pl_loggers.TensorBoardLogger(
@@ -108,3 +108,15 @@ class denoisingTrainer:
                 fo.write(sdump)
 
         return
+
+def aggregate_bernoulliSamples(batch):
+        """Flatten batch+bernoulli samples. Shape [B*M, C, S, S, S]
+
+        Dataset returns [M, C, S, S, S] and dataloader returns [B, M, C, S, S, S].
+        This function flattens the array in order to make a batch be the set of bernoulli samples of each of the B subtomos.
+        """
+        bernoulli_subtomo = torch.stack([b[0] for b in batch], axis=0).flatten(0, 1)
+        target = torch.stack([b[1] for b in batch], axis=0).flatten(0, 1)
+        bernoulli_mask = torch.stack([b[2] for b in batch], axis=0).flatten(0, 1)
+        
+        return bernoulli_subtomo, target, bernoulli_mask
