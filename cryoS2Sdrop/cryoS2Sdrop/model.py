@@ -57,11 +57,10 @@ class Denoising_UNet(pl.LightningModule):
         e3 = self.EB3(e2)  # 1/4
         e4 = self.EB4(e3)  # 1/8
         e5 = self.EB5(e4)  # 1/16
-        e6 = self.EB6(e5)  # 1/32
-        e_bottom = self.EB_bottom(e6)  # 1/32, n_features = 48
+        e6 = self.EB_bottom(e5)  # 1/32
 
         ##### DECODER #####
-        d5 = self.up65(e_bottom)  # 1/16
+        d5 = self.up65(e6)  # 1/16
         d5 = torch.concat([d5, e5], axis=1)  # 1/16, n_freatures = 96
         d5 = self.DB5(d5)  # 1/16
 
