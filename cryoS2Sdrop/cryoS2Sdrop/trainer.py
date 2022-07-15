@@ -13,7 +13,9 @@ from pytorch_lightning.callbacks import LearningRateMonitor
 
 
 class denoisingTrainer:
-    def __init__(self, cet_path, subtomo_length, lr, n_features, p, tensorboard_logdir, loss_fn):
+    def __init__(
+        self, cet_path, subtomo_length, lr, n_features, p, tensorboard_logdir, loss_fn
+    ):
         super().__init__()
 
         # Hardcoded
@@ -65,7 +67,11 @@ class denoisingTrainer:
         )
 
         train_loader = DataLoader(
-            my_dataset, batch_size=batch_size, shuffle=True, pin_memory=True, collate_fn=aggregate_bernoulliSamples
+            my_dataset,
+            batch_size=batch_size,
+            shuffle=True,
+            pin_memory=True,
+            collate_fn=aggregate_bernoulliSamples,
         )
 
         logger = pl_loggers.TensorBoardLogger(
@@ -98,10 +104,15 @@ class denoisingTrainer:
 
         if trainer.is_global_zero:
             #### Log additional hyperparameters #####
-            hparams_file = os.path.join(self.tensorboard_logdir, 'version_%i' %self.model.logger.version)
-            hparams_file = os.path.join(hparams_file, 'hparams.yaml')
+            hparams_file = os.path.join(
+                self.tensorboard_logdir, "version_%i" % self.model.logger.version
+            )
+            hparams_file = os.path.join(hparams_file, "hparams.yaml")
 
-            extra_hparams = {'transform':transform, 'singleCET_dataset.Vmask_probability':my_dataset.Vmask_probability}
+            extra_hparams = {
+                "transform": transform,
+                "singleCET_dataset.Vmask_probability": my_dataset.Vmask_probability,
+            }
             sdump = yaml.dump(extra_hparams)
 
             with open(hparams_file, "a") as fo:
@@ -109,14 +120,15 @@ class denoisingTrainer:
 
         return
 
+
 def aggregate_bernoulliSamples(batch):
-        """Flatten batch+bernoulli samples. Shape [B*M, C, S, S, S]
+    """Flatten batch+bernoulli samples. Shape [B*M, C, S, S, S]
 
         Dataset returns [M, C, S, S, S] and dataloader returns [B, M, C, S, S, S].
         This function flattens the array in order to make a batch be the set of bernoulli samples of each of the B subtomos.
         """
-        bernoulli_subtomo = torch.stack([b[0] for b in batch], axis=0).flatten(0, 1)
-        target = torch.stack([b[1] for b in batch], axis=0).flatten(0, 1)
-        bernoulli_mask = torch.stack([b[2] for b in batch], axis=0).flatten(0, 1)
-        
-        return bernoulli_subtomo, target, bernoulli_mask
+    bernoulli_subtomo = torch.stack([b[0] for b in batch], axis=0).flatten(0, 1)
+    target = torch.stack([b[1] for b in batch], axis=0).flatten(0, 1)
+    bernoulli_mask = torch.stack([b[2] for b in batch], axis=0).flatten(0, 1)
+
+    return bernoulli_subtomo, target, bernoulli_mask

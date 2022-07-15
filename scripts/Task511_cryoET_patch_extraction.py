@@ -15,22 +15,24 @@ def find_coms(img: np.ndarray):
     return coms
 
 
-if __name__ == '__main__':
-    
-    patchloc_base = './patch_centers'
-        
+if __name__ == "__main__":
+
+    patchloc_base = "./patch_centers"
+
     # RAW TOMOGRAMS
     # tomos_base = '/home/haicu/jeronimo.carvajal/Thesis/data/raw_cryo-ET'
     # out_dir = '/home/haicu/jeronimo.carvajal/Thesis/data/raw_cryo-ET/patch_creation/result'
-    
+
     # CRYOCARE+ISONET
     # tomos_base = '/home/haicu/jeronimo.carvajal/Thesis/data/isoNet/cryoCARE_corrected'
     # out_dir = '/home/haicu/jeronimo.carvajal/Thesis/data/isoNet/cryoCARE_corrected/patch_creation/result'
-    
-    # ISONET 
-    tomos_base = '/home/haicu/jeronimo.carvajal/Thesis/data/isoNet/RAW_dataset/RAW_corrected_i30'
-    out_dir = tomos_base+'/patch_creation/result'
-    
+
+    # ISONET
+    tomos_base = (
+        "/home/haicu/jeronimo.carvajal/Thesis/data/isoNet/RAW_dataset/RAW_corrected_i30"
+    )
+    out_dir = tomos_base + "/patch_creation/result"
+
     patch_size = (128, 128, 128)
     padding = (16, 16, 16)
     padded_patch_size = (160, 160, 160)
@@ -47,38 +49,43 @@ if __name__ == '__main__':
     maybe_mkdir_p(imagestr)
 
     # loop over different patch iterations since we haven't extracted all at once
-    for patch_iter in [1,2,3]:
+    for patch_iter in [1, 2, 3]:
         p_iter = str(patch_iter)
 
         patchloc_base_iter = join(patchloc_base, p_iter)
 
-        if p_iter == '2':  # did not add patches to tomo17 in patcher iteration 2
+        if p_iter == "2":  # did not add patches to tomo17 in patcher iteration 2
             tomo_ids = [2, 3, 4, 10, 32, 38]
         else:
             tomo_ids = [2, 3, 4, 10, 17, 32, 38]
         for t in tomo_ids:
             print(t)
             # raw tomogram
-            # name = 'tomo%02.0d.mrc' 
-            
+            # name = 'tomo%02.0d.mrc'
+
             # CRYOCARE+ISONET
             # name = 'tomo%02.0d_bin4_denoised_0000_corrected.mrc'
-            
+
             # ISONET
-            name = 'tomo%02.0d_corrected.mrc'
-            
+            name = "tomo%02.0d_corrected.mrc"
+
             image = sitk.GetArrayFromImage(sitk.ReadImage(join(tomos_base, name % t)))
             image = image - image.mean()
             image = image / image.std()
-            
-            # image = sitk.GetArrayFromImage(sitk.ReadImage(join(tomos_base, 'tomo%02.0d_bin4_denoised_0000.nii.gz' % t))) 
-            patchlocs = sitk.GetArrayFromImage(sitk.ReadImage(join(patchloc_base_iter, 'tomo%02.0d_patch_centers.nii.gz' % t)))
+
+            # image = sitk.GetArrayFromImage(sitk.ReadImage(join(tomos_base, 'tomo%02.0d_bin4_denoised_0000.nii.gz' % t)))
+            patchlocs = sitk.GetArrayFromImage(
+                sitk.ReadImage(
+                    join(patchloc_base_iter, "tomo%02.0d_patch_centers.nii.gz" % t)
+                )
+            )
 
             coms = find_coms(patchlocs)
             # now sample patches around COM
             for ctr, c in enumerate(coms):
                 bbox = [
-                    [c[i] - padded_patch_size[i]//2, c[i] + padded_patch_size[i]//2] for i in range(3)
+                    [c[i] - padded_patch_size[i] // 2, c[i] + padded_patch_size[i] // 2]
+                    for i in range(3)
                 ]
                 for i in range(3):
                     mn = min(bbox[i])
@@ -90,15 +97,22 @@ if __name__ == '__main__':
                         diff = mx - image.shape[i]
                         bbox[i] = [j - diff for j in bbox[i]]
                 slices = tuple([slice(*i) for i in bbox])
-                slices_center = tuple([slice(i[0] + padding[j], i[1] - padding[j]) for j, i in enumerate(bbox)])
+                slices_center = tuple(
+                    [
+                        slice(i[0] + padding[j], i[1] - padding[j])
+                        for j, i in enumerate(bbox)
+                    ]
+                )
                 i = image[slices]
 
-                if p_iter == '1':
+                if p_iter == "1":
                     numbering = ctr
-                elif p_iter == '2':
-                    numbering = ctr+20
-                elif p_iter == '3':
-                    numbering = ctr+30
-                my_name = 'tomo%02.0d_patch%03.0d' % (t, numbering)
+                elif p_iter == "2":
+                    numbering = ctr + 20
+                elif p_iter == "3":
+                    numbering = ctr + 30
+                my_name = "tomo%02.0d_patch%03.0d" % (t, numbering)
 
-                sitk.WriteImage(sitk.GetImageFromArray(i), join(imagestr, my_name + '_0000.nii.gz'))
+                sitk.WriteImage(
+                    sitk.GetImageFromArray(i), join(imagestr, my_name + "_0000.nii.gz")
+                )

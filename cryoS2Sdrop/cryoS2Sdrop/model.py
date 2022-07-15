@@ -166,6 +166,8 @@ class Denoising_UNet(pl.LightningModule):
         )
 
         tensorboard = self.logger.experiment
-        tensorboard.add_histogram('Intensity distribution', pred.detach().cpu().numpy().flatten())
+        tensorboard.add_histogram(
+            "Intensity distribution", pred.detach().cpu().numpy().flatten()
+        )
 
         return loss

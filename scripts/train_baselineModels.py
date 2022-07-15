@@ -1,6 +1,11 @@
 from tomoSegmentPipeline import dataloader as dl
 from tomoSegmentPipeline.utils import setup
-from tomoSegmentPipeline.dataloader import to_categorical, transpose_to_channels_first, tomoSegment_dummyDataset, tomoSegment_dataset
+from tomoSegmentPipeline.dataloader import (
+    to_categorical,
+    transpose_to_channels_first,
+    tomoSegment_dummyDataset,
+    tomoSegment_dataset,
+)
 from tomoSegmentPipeline.training import Train
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 from pytorch_lightning.callbacks import LearningRateMonitor
@@ -11,35 +16,43 @@ PARENT_PATH = setup.PARENT_PATH
 
 import torch
 
-val_tomos = ['tomo32', 'tomo10']
-concat_val_ids = sorted([s.replace('tomo', '') for s in val_tomos])
-concat_val_ids = '-'.join(concat_val_ids)
+val_tomos = ["tomo32", "tomo10"]
+concat_val_ids = sorted([s.replace("tomo", "") for s in val_tomos])
+concat_val_ids = "-".join(concat_val_ids)
 
-test_tomos = ['tomo38', 'tomo04']
-concat_test_ids = sorted([s.replace('tomo', '') for s in test_tomos])
-concat_test_ids = '-'.join(concat_test_ids)
+test_tomos = ["tomo38", "tomo04"]
+concat_test_ids = sorted([s.replace("tomo", "") for s in test_tomos])
+concat_test_ids = "-".join(concat_test_ids)
 
 
-training_schedule = [['tomo02', 'tomo03', 'tomo17'], ['tomo02'], ['tomo03'], ['tomo17']]
+training_schedule = [["tomo02", "tomo03", "tomo17"], ["tomo02"], ["tomo03"], ["tomo17"]]
 # training_schedule = [['tomo02'], ['tomo03'], ['tomo17']]
 
-for input_type in ['isoNET', 'cryoCARE+isoNET', 'cryoCARE', 'rawCET']:
+for input_type in ["isoNET", "cryoCARE+isoNET", "cryoCARE", "rawCET"]:
     for train_tomos in training_schedule:
-        concat_train_ids = sorted([s.replace('tomo', '') for s in train_tomos])
-        concat_train_ids = '-'.join(concat_train_ids)
+        concat_train_ids = sorted([s.replace("tomo", "") for s in train_tomos])
+        concat_train_ids = "-".join(concat_train_ids)
 
         chkpnt = None
 
-        if len(train_tomos)==1:
-            tb_logdir = os.path.join(PARENT_PATH, 'data/model_logs/models_2/logs/LowBaselineModel/%s/train%s' %(input_type, concat_train_ids))
-            model_name = 'LowBaseline'
+        if len(train_tomos) == 1:
+            tb_logdir = os.path.join(
+                PARENT_PATH,
+                "data/model_logs/models_2/logs/LowBaselineModel/%s/train%s"
+                % (input_type, concat_train_ids),
+            )
+            model_name = "LowBaseline"
 
             # chkpnt = os.path.join(tb_logdir, 'version_4/checkpoints/epoch=799-step=1599.ckpt')
             # epochs += 200
 
-        elif len(train_tomos)==3:
-            tb_logdir = os.path.join(PARENT_PATH, 'data/model_logs/models_2/logs/BaselineModel/%s/train%s' %(input_type, concat_train_ids))
-            model_name = 'Baseline'
+        elif len(train_tomos) == 3:
+            tb_logdir = os.path.join(
+                PARENT_PATH,
+                "data/model_logs/models_2/logs/BaselineModel/%s/train%s"
+                % (input_type, concat_train_ids),
+            )
+            model_name = "Baseline"
 
             # chkpnt = os.path.join(tb_logdir, 'version_10/checkpoints/epoch=699-step=3499.ckpt')
             # epochs += 200
@@ -54,24 +67,42 @@ for input_type in ['isoNET', 'cryoCARE+isoNET', 'cryoCARE', 'rawCET']:
         batch_size = 22
         pretrained_model = None
 
-        trainer = Train(Ncl=Ncl, dim_in=dim_in, lr=lr, weight_decay=weight_decay, Lrnd=Lrnd, tensorboard_logdir=tb_logdir,
-        model_name=model_name, augment_data=augment_data, 
-        batch_size=batch_size, epochs=epochs, pretrained_model=pretrained_model)
+        trainer = Train(
+            Ncl=Ncl,
+            dim_in=dim_in,
+            lr=lr,
+            weight_decay=weight_decay,
+            Lrnd=Lrnd,
+            tensorboard_logdir=tb_logdir,
+            model_name=model_name,
+            augment_data=augment_data,
+            batch_size=batch_size,
+            epochs=epochs,
+            pretrained_model=pretrained_model,
+        )
 
         early_stop_callback = EarlyStopping(
-                monitor='hp/val_loss',
-                min_delta=1e-4,
-                patience=100,
-                verbose=True,
-                mode='min'
-                )
+            monitor="hp/val_loss",
+            min_delta=1e-4,
+            patience=100,
+            verbose=True,
+            mode="min",
+        )
 
-        lr_monitor = LearningRateMonitor(logging_interval='step')
+        lr_monitor = LearningRateMonitor(logging_interval="step")
 
         callbacks = [early_stop_callback, lr_monitor]
 
-        trainer.launch(train_tomos, val_tomos, input_type=input_type, num_gpus=3, accelerator='ddp',
-        num_workers=1, resume_from_checkpoint=chkpnt, train_callbacks=callbacks)
+        trainer.launch(
+            train_tomos,
+            val_tomos,
+            input_type=input_type,
+            num_gpus=3,
+            accelerator="ddp",
+            num_workers=1,
+            resume_from_checkpoint=chkpnt,
+            train_callbacks=callbacks,
+        )
 
 
 # #################### TEST RUN  ###########################3

@@ -33,7 +33,7 @@ class singleCET_dataset(Dataset):
         self.upsample = torch.nn.Upsample(scale_factor=volumetric_scale_factor)
         self.vol_scale_factor = volumetric_scale_factor
         self.channels = 1
-        self.Vmask_probability = 0 # otherwise use Pmask
+        self.Vmask_probability = 0.2  # otherwise use Pmask
 
         self.n_bernoulli_samples = 6
 
@@ -52,9 +52,9 @@ class singleCET_dataset(Dataset):
     def standardize(self, X: torch.tensor):
         mean = X.mean()
         std = X.std()
-        
+
         new_X = (X - mean) / std
-        
+
         return new_X
 
     def clip(self, X, low=0.005, high=0.995):
@@ -116,10 +116,14 @@ class singleCET_dataset(Dataset):
             subtomo = self.transform(subtomo)
 
         ##### One different mask per __getitem__ call
-        bernoulli_mask = torch.stack([self.create_bernoulliMask() for i in range(self.n_bernoulli_samples)], axis=0)
-        
+        bernoulli_mask = torch.stack(
+            [self.create_bernoulliMask() for i in range(self.n_bernoulli_samples)],
+            axis=0,
+        )
 
-        _samples = subtomo.unsqueeze(0).repeat(self.n_bernoulli_samples, 1, 1, 1, 1) # get n samples
+        _samples = subtomo.unsqueeze(0).repeat(
+            self.n_bernoulli_samples, 1, 1, 1, 1
+        )  # get n samples
         bernoulli_subtomo = bernoulli_mask * _samples  # bernoulli samples
         target = (1 - bernoulli_mask) * _samples  # complement of the bernoulli sample
 
@@ -176,4 +180,4 @@ class randomRotation3D(object):
         return subtomo
 
     def __repr__(self):
-        return repr("randomRotation3D with probability %.02f" %self.p)
+        return repr("randomRotation3D with probability %.02f" % self.p)

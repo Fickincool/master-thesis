@@ -6,6 +6,7 @@ import yaml
 from tqdm import tqdm
 from glob import glob
 
+
 def aux_forward(model, subtomo):
     with torch.no_grad():
         return model(subtomo)
@@ -42,14 +43,15 @@ def predict_full_tomogram(singleCET_dataset, model, batch_size):
 
     for idx, batch in enumerate(dloader):
 
-        subtomo, _, _ = batch # shape: [B, M, C:=1, S, S, S]
+        subtomo, _, _ = batch  # shape: [B, M, C:=1, S, S, S]
 
         # one prediction per subtomogram (batch member) averaging over bernoulli samples
-        denoised_subtomo = torch.stack([aux_forward(model, s) for s in subtomo]).mean(1).squeeze().cpu()
-        # with torch.no_grad():
-            # only works for n_channels=1
-            # denoised_subtomo = model(subtomo).mean(0).squeeze(1).cpu()
-            
+        denoised_subtomo = (
+            torch.stack([aux_forward(model, s) for s in subtomo])
+            .mean(1)
+            .squeeze(1)
+            .cpu()
+        )
 
         grid_min, grid_max = idx * batch_size, (idx + 1) * batch_size
         grid_max = min(grid_max, len(singleCET_dataset))
