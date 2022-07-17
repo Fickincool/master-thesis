@@ -14,7 +14,7 @@ from pytorch_lightning.callbacks import LearningRateMonitor
 
 class denoisingTrainer:
     def __init__(
-        self, cet_path, subtomo_length, lr, n_features, p, tensorboard_logdir, loss_fn
+        self, cet_path, subtomo_length, lr, n_features, p, n_bernoulli_samples, tensorboard_logdir, loss_fn
     ):
         super().__init__()
 
@@ -27,6 +27,7 @@ class denoisingTrainer:
         self.lr = lr
         self.subtomo_length = subtomo_length
         self.p = p
+        self.n_bernoulli_samples = n_bernoulli_samples
         self.n_features = n_features
 
         # logs
@@ -58,6 +59,7 @@ class denoisingTrainer:
             self.cet_path,
             subtomo_length=self.subtomo_length,
             p=self.p,
+            n_bernoulli_samples=self.n_bernoulli_samples,
             transform=transform,
         )
 

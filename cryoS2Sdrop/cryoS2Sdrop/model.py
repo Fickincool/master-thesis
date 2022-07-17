@@ -23,22 +23,22 @@ class Denoising_UNet(pl.LightningModule):
         self.save_hyperparameters()
 
         # Encoder blocks
-        self.EB1 = PartialConv3d(
+        self.EB0 = PartialConv3d(
             self.in_channels, self.n_features, kernel_size=3, padding=1
         )
+        self.EB1 = self.encoder_block()
         self.EB2 = self.encoder_block()
         self.EB3 = self.encoder_block()
         self.EB4 = self.encoder_block()
         self.EB5 = self.encoder_block()
-        self.EB6 = self.encoder_block()
-        self.EB_bottom = self.encoder_block_bottom()
+        self.EB6 = self.encoder_block_bottom()
 
         # Upsampling
-        self.up65 = nn.Upsample(scale_factor=2)
         self.up54 = nn.Upsample(scale_factor=2)
         self.up43 = nn.Upsample(scale_factor=2)
         self.up32 = nn.Upsample(scale_factor=2)
         self.up21 = nn.Upsample(scale_factor=2)
+        self.up10 = nn.Upsample(scale_factor=2)
 
         # decoder blocks
         self.DB5 = self.decoder_block(2 * n_features, 2 * n_features)
@@ -52,31 +52,41 @@ class Denoising_UNet(pl.LightningModule):
     def forward(self, x: torch.Tensor):
         "Input tensor of shape [batch_size, channels, tomo_side, tomo_side, tomo_side]"
         ##### ENCODER #####
-        e1 = self.EB1(x)  # no downsampling, n_features = 48
-        e2 = self.EB2(e1)  # downsample 1/2
-        e3 = self.EB3(e2)  # 1/4
-        e4 = self.EB4(e3)  # 1/8
-        e5 = self.EB5(e4)  # 1/16
-        e6 = self.EB_bottom(e5)  # 1/32
+        e0 = self.EB0(x)  # no downsampling, n_features = 48
+        e1 = self.EB1(e0)  # downsamples 1/2
+        e2 = self.EB2(e1)  # 1/4
+        e3 = self.EB3(e2)  # 1/8
+        e4 = self.EB4(e3)  # 1/16
+        e5 = self.EB5(e4)  # 1/32
+        e6 = self.EB6(e5) # only Pconv and LReLu
+        # for debugging
+        # print('EB0 (no downsampling):', e0.shape)
+        # print('EB1:', e1.shape)
+        # print('EB2:', e2.shape)
+        # print('EB3:', e3.shape)
+        # print('EB4:', e4.shape)
+        # print('EB5:', e5.shape)
+        # print('EB6: (no downsampling)', e6.shape)
+
 
         ##### DECODER #####
-        d5 = self.up65(e6)  # 1/16
-        d5 = torch.concat([d5, e5], axis=1)  # 1/16, n_freatures = 96
+        d5 = self.up54(e6)  # 1/16
+        d5 = torch.concat([d5, e4], axis=1)  # 1/16, n_freatures = 96
         d5 = self.DB5(d5)  # 1/16
 
-        d4 = self.up54(d5)  # 1/8
-        d4 = torch.concat([d4, e4], axis=1)  # 1/8 n_features = 144
+        d4 = self.up43(d5)  # 1/8
+        d4 = torch.concat([d4, e3], axis=1)  # 1/8 n_features = 144
         d4 = self.DB4(d4)  # 1/8 n_features = 96
 
-        d3 = self.up43(d4)  # 1/4
-        d3 = torch.concat([d3, e3], axis=1)  # 1/4
+        d3 = self.up32(d4)  # 1/4
+        d3 = torch.concat([d3, e2], axis=1)  # 1/4
         d3 = self.DB3(d3)  # 1/4
 
-        d2 = self.up32(d3)  # 1/2
-        d2 = torch.concat([d2, e2], axis=1)  # 1/2
+        d2 = self.up21(d3)  # 1/2
+        d2 = torch.concat([d2, e1], axis=1)  # 1/2
         d2 = self.DB2(d2)  # 1/2
 
-        d1 = self.up21(d2)
+        d1 = self.up10(d2)
         d1 = torch.concat([d1, x], axis=1)
         x = self.DB1(d1)
 

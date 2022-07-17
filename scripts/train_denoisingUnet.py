@@ -21,22 +21,23 @@ cet_path = os.path.join(
 
 
 p = 0.3  # dropout probability
-subtomo_length = 96
+n_bernoulli_samples = 18
+subtomo_length = 64
 n_features = 48
 
-tensorboard_logdir = os.path.join(PARENT_PATH, "data/S2SDenoising/model_logs")
+tensorboard_logdir = os.path.join(PARENT_PATH, "data/S2SDenoising/tryout_model_logs")
 
 batch_size = 2
-epochs = 500
+epochs = 30
 lr = 1e-4
 num_gpus = 2
 
 transform = randomRotation3D(0.5)
-loss_fn = self2selfLoss(alpha=1e-4)
+loss_fn = self2selfLoss(alpha=0)
 
 
 s2s_trainer = denoisingTrainer(
-    cet_path, subtomo_length, lr, n_features, p, tensorboard_logdir, loss_fn
+    cet_path, subtomo_length, lr, n_features, p, n_bernoulli_samples, tensorboard_logdir, loss_fn
 )
 
 s2s_trainer.train(batch_size, epochs, num_gpus, transform=transform)
