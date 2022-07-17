@@ -45,7 +45,9 @@ def total_variation3D(img: torch.Tensor) -> torch.Tensor:
         raise TypeError(f"Input type is not a torch.Tensor. Got {type(img)}")
 
     if len(img.shape) < 4 or len(img.shape) > 5:
-        raise ValueError(f"Expected input tensor to be of ndim 4 or 5, but got {len(img.shape)}.")
+        raise ValueError(
+            f"Expected input tensor to be of ndim 4 or 5, but got {len(img.shape)}."
+        )
 
     pixel_dif1 = img[..., 1:, :, :] - img[..., :-1, :, :]
     pixel_dif2 = img[..., :, 1:, :] - img[..., :, :-1, :]
@@ -58,6 +60,7 @@ def total_variation3D(img: torch.Tensor) -> torch.Tensor:
         res += pixel_dif.abs().sum(dim=reduce_axes)
 
     return res
+
 
 class TotalVariation(torch.nn.Module):
     r"""Compute the Total Variation according to [1].
@@ -76,11 +79,13 @@ class TotalVariation(torch.nn.Module):
     Reference:
         [1] https://en.wikipedia.org/wiki/Total_variation
     """
+
     def __init__(self):
         super().__init__()
 
     def forward(self, img) -> torch.Tensor:
         return total_variation3D(img)
+
 
 class self2selfLoss(torch.nn.Module):
     def __init__(self, alpha=1e-4):
@@ -96,5 +101,7 @@ class self2selfLoss(torch.nn.Module):
         - y_wedge: (1-bernoulli_mask)*model(bernoulli_subtomo)
         - target: (1-bernoulli_mask)*subtomo
         """
-        y_wedge = (1-mask)*subtomo_pred
-        return self.l2(y_wedge, target) + self.alpha*self.total_variation(subtomo_pred+subtomo).mean(0)
+        y_wedge = (1 - mask) * subtomo_pred
+        return self.l2(y_wedge, target) + self.alpha * self.total_variation(
+            subtomo_pred + subtomo
+        ).mean(0)

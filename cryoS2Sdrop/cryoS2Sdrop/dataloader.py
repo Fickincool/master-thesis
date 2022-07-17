@@ -6,12 +6,12 @@ from tomoSegmentPipeline.utils.common import read_array
 
 class singleCET_dataset(Dataset):
     def __init__(
-        self, tomo_path, subtomo_length, p, volumetric_scale_factor=8, transform=None
+        self, tomo_path, subtomo_length, p, n_bernoulli_samples=6, volumetric_scale_factor=4, transform=None
     ):
         """
         Load cryoET dataset for self2self denoising.
 
-        The dataset consists of subtomograms of shape [C, S, S, S] C (equal to 1) is the number of channels and 
+        The dataset consists of subtomograms of shape [M, C, S, S, S] C (equal to 1) is the number of channels and 
         S is the subtomogram side length.
 
         - tomo_path: tomogram path
@@ -33,7 +33,11 @@ class singleCET_dataset(Dataset):
         self.upsample = torch.nn.Upsample(scale_factor=volumetric_scale_factor)
         self.vol_scale_factor = volumetric_scale_factor
         self.channels = 1
-        self.Vmask_probability = 0 # otherwise use Pmask
+        self.Vmask_probability = 0.2  # otherwise use Pmask
+
+        self.n_bernoulli_samples = n_bernoulli_samples
+        # here we only create one set of M bernoulli masks to be sampled from
+        self.bernoulli_mask_samples = self.create_bernoulliMaskSamples()
 
         self.run_init_asserts()
 
@@ -42,7 +46,7 @@ class singleCET_dataset(Dataset):
     def run_init_asserts(self):
         if self.subtomo_length % self.vol_scale_factor != 0:
             raise ValueError(
-                "Length of subtomograms must a multiple of the volumetric scale factor."
+                "Length of subtomograms must be a multiple of the volumetric scale factor."
             )
 
         return
@@ -50,9 +54,9 @@ class singleCET_dataset(Dataset):
     def standardize(self, X: torch.tensor):
         mean = X.mean()
         std = X.std()
-        
+
         new_X = (X - mean) / std
-        
+
         return new_X
 
     def clip(self, X, low=0.005, high=0.995):
@@ -84,6 +88,24 @@ class singleCET_dataset(Dataset):
 
         return bernoulli_Pmask
 
+    def create_bernoulliMask(self):
+        if np.random.uniform() < self.Vmask_probability:
+            # might work as an augmentation technique.
+            bernoulli_mask = self.create_Vmask()
+        else:
+            bernoulli_mask = self.create_Pmask()
+
+        return bernoulli_mask
+
+    def create_bernoulliMaskSamples(self):
+        "Create a predefined set of masks that will be sampled from on each __getitem__ call"
+        M = self.n_bernoulli_samples*2
+        bernoulli_mask = torch.stack(
+            [self.create_bernoulliMask() for i in range(M)],
+            axis=0,
+        )
+        return bernoulli_mask
+
     def __getitem__(self, index: int):
         center_z, center_y, center_x = self.grid[index]
         z_min, z_max = (
@@ -105,13 +127,17 @@ class singleCET_dataset(Dataset):
             subtomo = self.transform(subtomo)
 
         ##### One different mask per __getitem__ call
-        if np.random.uniform() < self.Vmask_probability:
-            # might work as an augmentation technique.
-            bernoulli_mask = self.create_Vmask()
-        else:
-            bernoulli_mask = self.create_Pmask()
+        # bernoulli_mask = torch.stack(
+        #     [self.create_bernoulliMask() for i in range(self.n_bernoulli_samples)],
+        #     axis=0,
+        # )
+        ##### Take samples from a pool of predefined bernoulli masks
+        bernoulli_mask_sample_idx = np.random.choice(range(len(self.bernoulli_mask_samples)), self.n_bernoulli_samples, replace=False)
+        bernoulli_mask = self.bernoulli_mask_samples[bernoulli_mask_sample_idx]
 
-        _samples = subtomo.unsqueeze(0)
+        _samples = subtomo.unsqueeze(0).repeat(
+            self.n_bernoulli_samples, 1, 1, 1, 1
+        )  # get n samples
         bernoulli_subtomo = bernoulli_mask * _samples  # bernoulli samples
         target = (1 - bernoulli_mask) * _samples  # complement of the bernoulli sample
 
@@ -168,4 +194,4 @@ class randomRotation3D(object):
         return subtomo
 
     def __repr__(self):
-        return repr("randomRotation3D with probability %.02f" %self.p)
+        return repr("randomRotation3D with probability %.02f" % self.p)

@@ -1,9 +1,15 @@
 from cryoS2Sdrop.model import Denoising_UNet
+from cryoS2Sdrop.trainer import aggregate_bernoulliSamples
 import torch
 from torch.utils.data import DataLoader
 import yaml
 from tqdm import tqdm
 from glob import glob
+
+
+def aux_forward(model, subtomo):
+    with torch.no_grad():
+        return model(subtomo)
 
 
 def load_model(logdir, DataParallel=False):
@@ -37,12 +43,15 @@ def predict_full_tomogram(singleCET_dataset, model, batch_size):
 
     for idx, batch in enumerate(dloader):
 
-        subtomo, _, _ = batch
+        subtomo, _, _ = batch  # shape: [B, M, C:=1, S, S, S]
 
-        with torch.no_grad():
-            # only works for n_channels=1
-            denoised_subtomo = model(subtomo).squeeze(1).cpu()
-            
+        # one prediction per subtomogram (batch member) averaging over bernoulli samples
+        denoised_subtomo = (
+            torch.stack([aux_forward(model, s) for s in subtomo])
+            .mean(1)
+            .squeeze(1)
+            .cpu()
+        )
 
         grid_min, grid_max = idx * batch_size, (idx + 1) * batch_size
         grid_max = min(grid_max, len(singleCET_dataset))
