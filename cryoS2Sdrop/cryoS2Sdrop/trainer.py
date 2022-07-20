@@ -14,7 +14,18 @@ from pytorch_lightning.callbacks import LearningRateMonitor
 
 class denoisingTrainer:
     def __init__(
-        self, cet_path, subtomo_length, lr, n_features, p, n_bernoulli_samples, tensorboard_logdir, loss_fn
+        self,
+        cet_path,
+        subtomo_length,
+        lr,
+        n_features,
+        p,
+        n_bernoulli_samples,
+        volumetric_scale_factor,
+        Vmask_probability,
+        Vmask_pct,
+        tensorboard_logdir,
+        loss_fn,
     ):
         super().__init__()
 
@@ -29,6 +40,9 @@ class denoisingTrainer:
         self.p = p
         self.n_bernoulli_samples = n_bernoulli_samples
         self.n_features = n_features
+        self.volumetric_scale_factor = volumetric_scale_factor
+        self.Vmask_probability = Vmask_probability
+        self.Vmask_pct = Vmask_pct
 
         # logs
         self.tensorboard_logdir = tensorboard_logdir
@@ -53,6 +67,7 @@ class denoisingTrainer:
         accelerator="gpu",
         strategy="ddp",
         transform=None,
+        comment=None
     ):
 
         my_dataset = singleCET_dataset(
@@ -60,6 +75,9 @@ class denoisingTrainer:
             subtomo_length=self.subtomo_length,
             p=self.p,
             n_bernoulli_samples=self.n_bernoulli_samples,
+            volumetric_scale_factor=self.volumetric_scale_factor,
+            Vmask_probability=self.Vmask_probability,
+            Vmask_pct=self.Vmask_pct,
             transform=transform,
         )
 
@@ -111,8 +129,13 @@ class denoisingTrainer:
             )
             hparams_file = os.path.join(hparams_file, "hparams.yaml")
 
-            extra_hparams = {'transform':transform, 'singleCET_dataset.Vmask_probability':my_dataset.Vmask_probability,
-            'singleCET_dataset.vol_scale_factor':my_dataset.vol_scale_factor}
+            extra_hparams = {
+                "transform": transform,
+                "singleCET_dataset.Vmask_probability": my_dataset.Vmask_probability,
+                "singleCET_dataset.vol_scale_factor": my_dataset.vol_scale_factor,
+                "singleCET_dataset.n_bernoulli_samples": my_dataset.n_bernoulli_samples,
+                "Version_comment":comment
+            }
             sdump = yaml.dump(extra_hparams)
 
             with open(hparams_file, "a") as fo:

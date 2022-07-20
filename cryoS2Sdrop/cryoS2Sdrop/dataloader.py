@@ -6,7 +6,15 @@ from tomoSegmentPipeline.utils.common import read_array
 
 class singleCET_dataset(Dataset):
     def __init__(
-        self, tomo_path, subtomo_length, p, n_bernoulli_samples=6, volumetric_scale_factor=4, transform=None
+        self,
+        tomo_path,
+        subtomo_length,
+        p,
+        n_bernoulli_samples=6,
+        volumetric_scale_factor=4,
+        Vmask_probability=0,
+        Vmask_pct=0.1,
+        transform=None,
     ):
         """
         Load cryoET dataset for self2self denoising.
@@ -29,11 +37,13 @@ class singleCET_dataset(Dataset):
         self.grid = self.create_grid()
         self.transform = transform  # think how to implement this
         self.p = p
+        self.p0 = Vmask_pct
         self.dropout = torch.nn.Dropout(p=p)
+        self.dropoutV = torch.nn.Dropout(p=self.p0)
         self.upsample = torch.nn.Upsample(scale_factor=volumetric_scale_factor)
         self.vol_scale_factor = volumetric_scale_factor
         self.channels = 1
-        self.Vmask_probability = 0.2  # otherwise use Pmask
+        self.Vmask_probability = Vmask_probability  # otherwise use Pmask
 
         self.n_bernoulli_samples = n_bernoulli_samples
         # here we only create one set of M bernoulli masks to be sampled from
@@ -72,7 +82,7 @@ class singleCET_dataset(Dataset):
         downsampled_shape = tuple(downsampled_shape)
 
         # avoid power correction from dropout and set shape for upsampling
-        bernoulli_Vmask = self.dropout(torch.ones(downsampled_shape)) * (1 - self.p)
+        bernoulli_Vmask = self.dropoutV(torch.ones(downsampled_shape)) * (1 - self.p0)
         bernoulli_Vmask = bernoulli_Vmask.unsqueeze(0).unsqueeze(0)
         # make final shape [C, S, S, S]
         bernoulli_Vmask = self.upsample(bernoulli_Vmask).squeeze(0)
@@ -82,7 +92,6 @@ class singleCET_dataset(Dataset):
     def create_Pmask(self):
         "Create pointed blind spot random mask"
         _shape = 3 * [self.subtomo_length]
-
         bernoulli_Pmask = self.dropout(torch.ones(_shape)) * (1 - self.p)
         bernoulli_Pmask = bernoulli_Pmask.unsqueeze(0)
 
@@ -99,10 +108,9 @@ class singleCET_dataset(Dataset):
 
     def create_bernoulliMaskSamples(self):
         "Create a predefined set of masks that will be sampled from on each __getitem__ call"
-        M = self.n_bernoulli_samples*2
+        M = self.n_bernoulli_samples * 5
         bernoulli_mask = torch.stack(
-            [self.create_bernoulliMask() for i in range(M)],
-            axis=0,
+            [self.create_bernoulliMask() for i in range(M)], axis=0,
         )
         return bernoulli_mask
 
@@ -127,13 +135,17 @@ class singleCET_dataset(Dataset):
             subtomo = self.transform(subtomo)
 
         ##### One different mask per __getitem__ call
-        # bernoulli_mask = torch.stack(
-        #     [self.create_bernoulliMask() for i in range(self.n_bernoulli_samples)],
-        #     axis=0,
-        # )
+        bernoulli_mask = torch.stack(
+            [self.create_bernoulliMask() for i in range(self.n_bernoulli_samples)],
+            axis=0,
+        )
         ##### Take samples from a pool of predefined bernoulli masks
-        bernoulli_mask_sample_idx = np.random.choice(range(len(self.bernoulli_mask_samples)), self.n_bernoulli_samples, replace=False)
-        bernoulli_mask = self.bernoulli_mask_samples[bernoulli_mask_sample_idx]
+        # bernoulli_mask_sample_idx = np.random.choice(
+        #     range(len(self.bernoulli_mask_samples)),
+        #     self.n_bernoulli_samples,
+        #     replace=False,
+        # )
+        # bernoulli_mask = self.bernoulli_mask_samples[bernoulli_mask_sample_idx]
 
         _samples = subtomo.unsqueeze(0).repeat(
             self.n_bernoulli_samples, 1, 1, 1, 1

@@ -94,14 +94,30 @@ class self2selfLoss(torch.nn.Module):
         self.total_variation = TotalVariation()
         self.alpha = alpha
 
-    def forward(self, subtomo, subtomo_pred, target, mask):
+    def forward(self, subtomo_pred, target, mask):
         """
         Tensors of shape: [B, C, S, S, S]
-        The L2loss is only considered in the pixels that are masked from the beginning.
+        The L2loss is only considered in the pixels that are masked from the beginning and that the model predicted.
         - y_wedge: (1-bernoulli_mask)*model(bernoulli_subtomo)
         - target: (1-bernoulli_mask)*subtomo
         """
         y_wedge = (1 - mask) * subtomo_pred
         return self.l2(y_wedge, target) + self.alpha * self.total_variation(
-            subtomo_pred + subtomo
+            subtomo_pred
         ).mean(0)
+
+# class complementary_self2selfLoss(torch.nn.Module):
+#     def __init__(self, alpha=1e-4):
+#         super().__init__()
+#         self.l2 = self2self_L2Loss()
+
+#     def forward(self, subtomo_pred, target, mask):
+#         """
+#         Tensors of shape: [B, C, S, S, S]
+#         The complementary L2loss is only considered in the pixels that where not masked from the beginning. 
+#         The idea is to monitor what happens to the pixels outside the mask, which are expected to remain roughly unchanged.
+#         - y_wedge: bernoulli_mask*model(bernoulli_subtomo)
+#         - target: 
+#         """
+#         y_wedge = mask*subtomo_pred
+#         return self.l2(y_wedge, target)

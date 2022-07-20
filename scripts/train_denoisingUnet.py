@@ -15,17 +15,25 @@ PARENT_PATH = setup.PARENT_PATH
 
 # cet_path = os.path.join(PARENT_PATH, 'data/raw_cryo-ET/tomo02.mrc')
 # cet_path = os.path.join(PARENT_PATH, 'data/S2SDenoising/dummy_tomograms/tomo04_deconvDummy.mrc')
+# cet_path = os.path.join(
+#     PARENT_PATH, "data/S2SDenoising/dummy_tomograms/tomo02_dummy.mrc"
+# )
 cet_path = os.path.join(
-    PARENT_PATH, "data/S2SDenoising/dummy_tomograms/tomo02_dummy.mrc"
+    PARENT_PATH, "data/S2SDenoising/dummy_tomograms/tomoPhantom_model14_Poisson5000+Gauss5+stripes.mrc"
 )
 
 
 p = 0.3  # dropout probability
-n_bernoulli_samples = 18
-subtomo_length = 64
+n_bernoulli_samples = 6
+volumetric_scale_factor = 4
+Vmask_probability = 0.3
+Vmask_pct = 0.3
+
+subtomo_length = 96
 n_features = 48
 
 tensorboard_logdir = os.path.join(PARENT_PATH, "data/S2SDenoising/tryout_model_logs")
+comment = 'Check behavior of use Vmask with prob 0.3  and Vmask_pct 0.3 on model14'
 
 batch_size = 2
 epochs = 30
@@ -37,10 +45,20 @@ loss_fn = self2selfLoss(alpha=0)
 
 
 s2s_trainer = denoisingTrainer(
-    cet_path, subtomo_length, lr, n_features, p, n_bernoulli_samples, tensorboard_logdir, loss_fn
+    cet_path,
+    subtomo_length,
+    lr,
+    n_features,
+    p,
+    n_bernoulli_samples,
+    volumetric_scale_factor,
+    Vmask_probability,
+    Vmask_pct,
+    tensorboard_logdir,
+    loss_fn,
 )
 
-s2s_trainer.train(batch_size, epochs, num_gpus, transform=transform)
+s2s_trainer.train(batch_size, epochs, num_gpus, transform=transform, comment=comment)
 
 version = "version_%i" % s2s_trainer.model.logger.version
 
@@ -60,8 +78,10 @@ denoised_tomo = []
 
 print("Predicting full tomogram...")
 # this is taking two means: first per bernoulli batches, and then again for each time the model was run
-# total predictions is the number below*n_bernoulli_samples
-for i in tqdm(range(10)):
+# total predictions is the inner_range*n_bernoulli_samples
+total_preds = 100
+inner_range = total_preds//n_bernoulli_samples
+for i in tqdm(range(inner_range)):
     _denoised_tomo = predict_full_tomogram(my_dataset, model, batch_size)
     denoised_tomo.append(_denoised_tomo)
 
@@ -95,8 +115,10 @@ outfile = os.path.join(logdir, "original_vs_denoised.png")
 plt.savefig(outfile, dpi=200)
 
 
-filename = cet_path.split('/')[-1].replace('.mrc', '_s2sDenoised')
-v = version.replace('version_', 'v')
-filename = os.path.join(PARENT_PATH, 'data/S2SDenoising/denoised/%s_%s.mrc' %(filename, v))
+filename = cet_path.split("/")[-1].replace(".mrc", "_s2sDenoised")
+v = version.replace("version_", "v")
+filename = os.path.join(
+    PARENT_PATH, "data/S2SDenoising/denoised/%s_%s.mrc" % (filename, v)
+)
 
 write_array(denoised_tomo.numpy(), filename)

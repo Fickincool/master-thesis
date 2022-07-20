@@ -58,7 +58,7 @@ class Denoising_UNet(pl.LightningModule):
         e3 = self.EB3(e2)  # 1/8
         e4 = self.EB4(e3)  # 1/16
         e5 = self.EB5(e4)  # 1/32
-        e6 = self.EB6(e5) # only Pconv and LReLu
+        e6 = self.EB6(e5)  # only Pconv and LReLu
         # for debugging
         # print('EB0 (no downsampling):', e0.shape)
         # print('EB1:', e1.shape)
@@ -67,7 +67,6 @@ class Denoising_UNet(pl.LightningModule):
         # print('EB4:', e4.shape)
         # print('EB5:', e5.shape)
         # print('EB6: (no downsampling)', e6.shape)
-
 
         ##### DECODER #####
         d5 = self.up54(e6)  # 1/16
@@ -131,7 +130,7 @@ class Denoising_UNet(pl.LightningModule):
             nn.Dropout(self.p),
             nn.Conv3d(32, self.in_channels, kernel_size=3, padding=1),
             # This is in the original implementation paper, but here it doesn't help.
-            # It forces data to be (almost) positive, while tomogram data is close to normal.
+            # It forces data to be (almost) positive, while tomogram data is close to normal around zero.
             # nn.LeakyReLU(0.1)
         )
         return layer
@@ -163,7 +162,7 @@ class Denoising_UNet(pl.LightningModule):
     def training_step(self, batch):
         bernoulli_subtomo, target, bernoulli_mask = batch
         pred = self(bernoulli_subtomo)
-        loss = self.loss_fn(bernoulli_subtomo, pred, target, bernoulli_mask)
+        loss = self.loss_fn(pred, target, bernoulli_mask)
 
         self.log(
             "hp/train_loss",
