@@ -15,6 +15,7 @@ class singleCET_dataset(Dataset):
         Vmask_probability=0,
         Vmask_pct=0.1,
         transform=None,
+        gt_tomo_path=None
     ):
         """
         Load cryoET dataset for self2self denoising.
@@ -32,6 +33,14 @@ class singleCET_dataset(Dataset):
         self.data = torch.tensor(read_array(tomo_path))
         self.data = self.clip(self.data)
         self.data = self.standardize(self.data)
+        self.gt_tomo_path = gt_tomo_path
+        if gt_tomo_path is not None:
+            self.gt_data = torch.tensor(read_array(gt_tomo_path))
+            self.gt_data = self.clip(self.gt_data)
+            self.gt_data = self.standardize(self.gt_data)
+        else:
+            self.gt_data = None
+        
         self.tomo_shape = self.data.shape
         self.subtomo_length = subtomo_length
         self.grid = self.create_grid()
@@ -129,10 +138,15 @@ class singleCET_dataset(Dataset):
             center_x + self.subtomo_length // 2,
         )
         subtomo = self.data[z_min:z_max, y_min:y_max, x_min:x_max]
+        
+        if self.gt_data is not None:
+            gt_subtomo = self.gt_data[z_min:z_max, y_min:y_max, x_min:x_max]
+        else:
+            gt_subtomo = None
 
         # first transform and then get samples
         if self.transform:
-            subtomo = self.transform(subtomo)
+            subtomo, gt_subtomo = self.transform(subtomo, gt_subtomo)
 
         ##### One different mask per __getitem__ call
         bernoulli_mask = torch.stack(
@@ -146,14 +160,18 @@ class singleCET_dataset(Dataset):
         #     replace=False,
         # )
         # bernoulli_mask = self.bernoulli_mask_samples[bernoulli_mask_sample_idx]
-
+        if gt_subtomo is not None:
+            gt_subtomo = gt_subtomo.unsqueeze(0).repeat(
+                self.n_bernoulli_samples, 1, 1, 1, 1
+            )
+            
         _samples = subtomo.unsqueeze(0).repeat(
             self.n_bernoulli_samples, 1, 1, 1, 1
         )  # get n samples
         bernoulli_subtomo = bernoulli_mask * _samples  # bernoulli samples
         target = (1 - bernoulli_mask) * _samples  # complement of the bernoulli sample
 
-        return bernoulli_subtomo, target, bernoulli_mask
+        return bernoulli_subtomo, target, bernoulli_mask, gt_subtomo
 
     def create_grid(self):
         """Create a possibly overlapping set of patches forming a grid that covers a tomogram"""
@@ -190,20 +208,26 @@ class randomRotation3D(object):
         assert p >= 0 and p <= 1
         self.p = p
 
-    def __call__(self, subtomo):
+    def __call__(self, subtomo, gt_subtomo):
         "Input is a 3D ZYX (sub)tomogram"
         # 180º rotation around Y axis
         if np.random.uniform() < self.p:
             subtomo = torch.rot90(subtomo, k=2, dims=(0, 2))
+            if gt_subtomo is not None:
+                gt_subtomo = torch.rot90(gt_subtomo, k=2, dims=(0, 2))
         # 180º rotation around X axis
         if np.random.uniform() < self.p:
             subtomo = torch.rot90(subtomo, k=2, dims=(0, 1))
+            if gt_subtomo is not None:
+                gt_subtomo = torch.rot90(gt_subtomo, k=2, dims=(0, 1))
         # rotation between 90º and 270º around Z axis
         if np.random.uniform() < self.p:
             k = int(np.random.choice([1, 2, 3]))
             subtomo = torch.rot90(subtomo, k=k, dims=(1, 2))
+            if gt_subtomo is not None:
+                gt_subtomo = torch.rot90(gt_subtomo, k=k, dims=(1, 2))
 
-        return subtomo
+        return subtomo, gt_subtomo
 
     def __repr__(self):
         return repr("randomRotation3D with probability %.02f" % self.p)

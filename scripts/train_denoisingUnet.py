@@ -1,4 +1,5 @@
 import os
+import yaml
 import matplotlib.pyplot as plt
 import numpy as np
 from tqdm import tqdm
@@ -10,6 +11,8 @@ from cryoS2Sdrop.trainer import denoisingTrainer
 from cryoS2Sdrop.dataloader import randomRotation3D
 from cryoS2Sdrop.losses import self2self_L2Loss, self2selfLoss
 from cryoS2Sdrop.predict import load_model, predict_full_tomogram
+from pytorch_msssim import ssim
+from torchmetrics.functional import peak_signal_noise_ratio
 
 PARENT_PATH = setup.PARENT_PATH
 
@@ -18,8 +21,19 @@ PARENT_PATH = setup.PARENT_PATH
 # cet_path = os.path.join(
 #     PARENT_PATH, "data/S2SDenoising/dummy_tomograms/tomo02_dummy.mrc"
 # )
+
+gt_cet_path = None
+
+simulated_model = 'model16'
 cet_path = os.path.join(
-    PARENT_PATH, "data/S2SDenoising/dummy_tomograms/tomoPhantom_model14_Poisson5000+Gauss5+stripes.mrc"
+    PARENT_PATH, "data/S2SDenoising/dummy_tomograms/tomoPhantom_%s_Poisson5000+Gauss5+stripes.mrc" %simulated_model
+)
+# simulated_model = 'model9'
+# cet_path = os.path.join(
+#     PARENT_PATH, "data/S2SDenoising/dummy_tomograms/tomoPhantom_%s_Poisson5000+Gauss5.mrc" %simulated_model
+# )
+gt_cet_path = os.path.join(
+    PARENT_PATH, "data/S2SDenoising/dummy_tomograms/tomoPhantom_%s.mrc" %simulated_model
 )
 
 
@@ -33,10 +47,10 @@ subtomo_length = 96
 n_features = 48
 
 tensorboard_logdir = os.path.join(PARENT_PATH, "data/S2SDenoising/tryout_model_logs")
-comment = 'Check behavior of use Vmask with prob 0.3  and Vmask_pct 0.3 on model14'
+comment = 'Try adding ssim metric to assess model behavior.'
 
 batch_size = 2
-epochs = 30
+epochs = 5
 lr = 1e-4
 num_gpus = 2
 
@@ -46,6 +60,7 @@ loss_fn = self2selfLoss(alpha=0)
 
 s2s_trainer = denoisingTrainer(
     cet_path,
+    gt_cet_path,
     subtomo_length,
     lr,
     n_features,
@@ -71,7 +86,7 @@ torch.cuda.empty_cache()
 logdir = os.path.join(tensorboard_logdir, "%s/" % version)
 
 model, hparams = load_model(logdir, DataParallel=True)
-my_dataset = singleCET_dataset(cet_path, subtomo_length, p=p)
+my_dataset = singleCET_dataset(cet_path, subtomo_length, p=p, gt_tomo_path=gt_cet_path)
 
 batch_size = 10
 denoised_tomo = []
@@ -114,6 +129,29 @@ plt.tight_layout()
 outfile = os.path.join(logdir, "original_vs_denoised.png")
 plt.savefig(outfile, dpi=200)
 
+
+############### Write logs and prediction ########################
+ssim_full = ssim(denoised_tomo.unsqueeze(0), my_dataset.gt_data.unsqueeze(0))
+ssim_full = float(ssim_full)
+
+psnr_full = peak_signal_noise_ratio(denoised_tomo.unsqueeze(0), my_dataset.gt_data.unsqueeze(0))
+psnr_full = float(psnr_full)
+if my_dataset.gt_data is not None:
+    extra_hparams = {
+        "full_tomo_ssim": ssim_full,
+        "full_tomo_psnr": psnr_full,
+    }
+else:
+    extra_hparams = {
+        "full_tomo_ssim": None,
+        "full_tomo_psnr": None,
+    }
+
+sdump = yaml.dump(extra_hparams)
+hparams_file = os.path.join(tensorboard_logdir, version)
+hparams_file = os.path.join(hparams_file, "hparams.yaml")
+with open(hparams_file, "a") as fo:
+    fo.write(sdump)
 
 filename = cet_path.split("/")[-1].replace(".mrc", "_s2sDenoised")
 v = version.replace("version_", "v")

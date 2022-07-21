@@ -4,12 +4,14 @@ from torch import nn
 import pytorch_lightning as pl
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torch.utils.tensorboard import SummaryWriter
+from pytorch_msssim import ssim
+from torchmetrics.functional import peak_signal_noise_ratio
 
 from cryoS2Sdrop.partialconv3d import PartialConv3d
 
 
 class Denoising_UNet(pl.LightningModule):
-    def __init__(self, loss_fn, lr, n_features, p):
+    def __init__(self, loss_fn, lr, n_features, p, n_bernoulli_samples):
         """Expected input: [B, C, S, S, S] where B the batch size, C input channels and S the subtomo length.
         The data values are expected to be standardized and [0, 1] scaled.
         """
@@ -19,6 +21,7 @@ class Denoising_UNet(pl.LightningModule):
         self.lr = lr
         self.n_features = n_features
         self.p = p
+        self.n_bernoulli_samples = n_bernoulli_samples
         self.in_channels = 1
         self.save_hyperparameters()
 
@@ -160,7 +163,7 @@ class Denoising_UNet(pl.LightningModule):
         }
 
     def training_step(self, batch):
-        bernoulli_subtomo, target, bernoulli_mask = batch
+        bernoulli_subtomo, target, bernoulli_mask, gt_subtomo = batch
         pred = self(bernoulli_subtomo)
         loss = self.loss_fn(pred, target, bernoulli_mask)
 
@@ -173,9 +176,59 @@ class Denoising_UNet(pl.LightningModule):
             sync_dist=True,
         )
 
+        if gt_subtomo is not None:
+            bernoulliBatch_subtomo = self.batch2bernoulliBatch(bernoulli_subtomo)
+            bernoulliBatch_gt_subtomo = self.batch2bernoulliBatch(gt_subtomo)
+            monitor_ssim = self.ssim_monitoring(bernoulliBatch_subtomo, bernoulliBatch_gt_subtomo)
+            monitor_psnr = self.psnr_monitoring(bernoulliBatch_subtomo, bernoulliBatch_gt_subtomo)
+
+            self.log(
+                "hp/ssim",
+                monitor_ssim,
+                on_step=False,
+                on_epoch=True,
+                prog_bar=False,
+                sync_dist=True,
+            )
+
+            self.log(
+                "hp/psnr",
+                monitor_psnr,
+                on_step=False,
+                on_epoch=True,
+                prog_bar=False,
+                sync_dist=True,
+            )
+
         tensorboard = self.logger.experiment
         tensorboard.add_histogram(
             "Intensity distribution", pred.detach().cpu().numpy().flatten()
         )
 
         return loss
+
+    def batch2bernoulliBatch(self, subtomo):
+        return torch.split(subtomo, self.n_bernoulli_samples)
+
+    def ssim_monitoring(self, bernoulliBatch_subtomo, bernoulliBatch_gt_subtomo):
+        monitor = 0
+        for bBatch_subtomo, bBatch_gt in zip(bernoulliBatch_subtomo, bernoulliBatch_gt_subtomo):
+            _monitor = ssim(bBatch_subtomo.mean((0)), bBatch_gt.mean((0)))
+            monitor += _monitor
+
+        # take the mean wrt batch
+        return monitor/len(bernoulliBatch_gt_subtomo)
+
+    def psnr_monitoring(self, bernoulliBatch_subtomo, bernoulliBatch_gt_subtomo):
+        monitor = 0
+        for bBatch_subtomo, bBatch_gt in zip(bernoulliBatch_subtomo, bernoulliBatch_gt_subtomo):
+            i, j = bBatch_subtomo.mean((0)), bBatch_gt.mean((0)) # 1 Channel, 3D images [C, S, S, S]
+            # data is standardized, we don't expect to see any value further than 6 std from the origin
+            data_range = 12 
+            if j.abs().max() > 6:
+                raise ValueError('Found input values for ground truth further than 6 std away from the origin.')
+            _monitor = peak_signal_noise_ratio(i, j, data_range)
+            monitor += _monitor
+
+        # take the mean wrt batch
+        return monitor/len(bernoulliBatch_gt_subtomo)
