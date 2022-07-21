@@ -27,6 +27,7 @@ class destripeDataSet(Dataset):
     - (y, 1, Z, X): outlier mask (based on quantiles of the weight mask)
     - (y, 2, Z, X): weight mask (normalized log power)
     """
+
     def __init__(self, path, normalize=True, logTransform=False):
 
         # TODO: add this to standalone destripe
@@ -90,7 +91,7 @@ class destripeDataSet(Dataset):
         data = np.concatenate((data, weight_matrix), 1)
 
         # maybe turn this off at some point to work on the entire image
-        data = data[len(data)//2:len(data)//2+1]
+        data = data[len(data) // 2 : len(data) // 2 + 1]
 
         self.x_data = torch.from_numpy(data).float()
         self.y_data = torch.from_numpy(np.zeros((3, 1))).float()

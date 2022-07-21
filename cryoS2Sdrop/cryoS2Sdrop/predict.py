@@ -1,9 +1,15 @@
 from cryoS2Sdrop.model import Denoising_UNet
+from cryoS2Sdrop.trainer import aggregate_bernoulliSamples
 import torch
 from torch.utils.data import DataLoader
 import yaml
 from tqdm import tqdm
 from glob import glob
+
+
+def aux_forward(model, subtomo):
+    with torch.no_grad():
+        return model(subtomo)
 
 
 def load_model(logdir, DataParallel=False):
@@ -23,13 +29,19 @@ def load_model(logdir, DataParallel=False):
     return model, hparams
 
 
+def collate_fn(batch):
+    "Default pytorch collate_fn does not handle None. This ignores None values from the batch."
+    batch = [list(filter(lambda x: x is not None, b)) for b in batch]
+    return torch.utils.data.dataloader.default_collate(batch)
+
 def predict_full_tomogram(singleCET_dataset, model, batch_size):
 
     tomo_shape = singleCET_dataset.tomo_shape
     subtomo_length = singleCET_dataset.subtomo_length
 
+    # this returns a tensor of shape: [B, M, C, S, S, S]
     dloader = DataLoader(
-        singleCET_dataset, batch_size=batch_size, shuffle=False, pin_memory=True
+        singleCET_dataset, batch_size=batch_size, shuffle=False, pin_memory=True, collate_fn=collate_fn
     )
 
     denoised_tomo = torch.zeros(tomo_shape)
@@ -37,13 +49,17 @@ def predict_full_tomogram(singleCET_dataset, model, batch_size):
 
     for idx, batch in enumerate(dloader):
 
-        subtomo, _, _ = batch
+        subtomo = batch[0]  # shape: [B, M, C:=1, S, S, S]
 
-        with torch.no_grad():
-            # only works for n_channels=1
-            denoised_subtomo = model(subtomo).squeeze(1).cpu()
-            
+        # one prediction per subtomogram (batch member) averaging over bernoulli samples
+        denoised_subtomo = (
+            torch.stack([aux_forward(model, s) for s in subtomo])
+            .mean(1)
+            .squeeze(1)
+            .cpu()
+        )
 
+        # select grid indices
         grid_min, grid_max = idx * batch_size, (idx + 1) * batch_size
         grid_max = min(grid_max, len(singleCET_dataset))
         for batch_idx, grid_idx in enumerate(range(grid_min, grid_max)):

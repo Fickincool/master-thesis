@@ -60,30 +60,29 @@ class GCN(nn.Module):
 
     def neg2full_spectrum(self, x_neg, m, n, aver):
 
-        r = m+1 if m%2==0 else m
-        s = n+1 if n%2==0 else n
+        r = m + 1 if m % 2 == 0 else m
+        s = n + 1 if n % 2 == 0 else n
 
         d = x_neg.device
 
         aux_symmatrix = make_symmatrix(s, r)
         aux_symmask = torch.from_numpy(aux_symmatrix).float().to(d)
-        
-        x_neg = x_neg.repeat(2)[0:(aux_symmask==-1).sum()]
+
+        x_neg = x_neg.repeat(2)[0 : (aux_symmask == -1).sum()]
 
         new_img = (aux_symmask).type(torch.complex128).to(d)
-        new_img[torch.where(aux_symmask==-1)] = x_neg.type(torch.complex128)
+        new_img[torch.where(aux_symmask == -1)] = x_neg.type(torch.complex128)
 
         new_img = torch.flip(new_img, [0, 1])
 
-        new_img[torch.where(new_img==1)] = torch.conj(x_neg).type(torch.complex128)
+        new_img[torch.where(new_img == 1)] = torch.conj(x_neg).type(torch.complex128)
         new_img = torch.flip(new_img, [1, 0])
 
-        new_img[r//2, s//2] = aver
+        new_img[r // 2, s // 2] = aver
 
         return new_img[0:m, 0:n]
 
-
-    def forward( self, x_neg, N_neg, m, n, aver):
+    def forward(self, x_neg, N_neg, m, n, aver):
         """
         Inputs
         -----------------------------
@@ -107,7 +106,9 @@ class GCN(nn.Module):
         # L_neg = self.att(Wh_neg=x_neg, N_neg=N_neg, k_neighbors=k_neighbors)
 
         # update message: sum all neighbors for each index
-        message_tensor = torch.cat((x_neg, torch.zeros(1, self.inc).to(x_neg.device)))[N_neg]
+        message_tensor = torch.cat((x_neg, torch.zeros(1, self.inc).to(x_neg.device)))[
+            N_neg
+        ]
         x_neg = message_tensor.sum(1)
 
         x_neg = self.conv3(x_neg)
@@ -131,12 +132,16 @@ class MGNNds(nn.Module):
         neg_mask = (symmatrix == -1).astype(int)
 
         # make masks on initialization (TODO: Maybe precalculate.)
-        N_neg = make_N_neg_matrix(
-            dr=3,
-            neg_mask=neg_mask,
-            power_mask=self.outlier_mask.cpu().numpy(),
-            n_neighbors=64
-        ).fillna(-1).to_numpy()
+        N_neg = (
+            make_N_neg_matrix(
+                dr=3,
+                neg_mask=neg_mask,
+                power_mask=self.outlier_mask.cpu().numpy(),
+                n_neighbors=64,
+            )
+            .fillna(-1)
+            .to_numpy()
+        )
 
         self.N_neg = torch.from_numpy(N_neg).long().to(d)
         self.symmask = torch.from_numpy(symmatrix).float().to(d)
