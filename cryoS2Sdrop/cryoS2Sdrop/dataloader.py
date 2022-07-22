@@ -55,8 +55,6 @@ class singleCET_dataset(Dataset):
         self.Vmask_probability = Vmask_probability  # otherwise use Pmask
 
         self.n_bernoulli_samples = n_bernoulli_samples
-        # here we only create one set of M bernoulli masks to be sampled from
-        self.bernoulli_mask_samples = self.create_bernoulliMaskSamples()
 
         self.run_init_asserts()
 
@@ -113,14 +111,6 @@ class singleCET_dataset(Dataset):
         else:
             bernoulli_mask = self.create_Pmask()
 
-        return bernoulli_mask
-
-    def create_bernoulliMaskSamples(self):
-        "Create a predefined set of masks that will be sampled from on each __getitem__ call"
-        M = self.n_bernoulli_samples * 5
-        bernoulli_mask = torch.stack(
-            [self.create_bernoulliMask() for i in range(M)], axis=0,
-        )
         return bernoulli_mask
 
     def __getitem__(self, index: int):
@@ -202,6 +192,132 @@ class singleCET_dataset(Dataset):
 
         return grid
 
+
+class singleCET_FourierDataset(singleCET_dataset):
+    def __init__(
+        self,
+        tomo_path,
+        subtomo_length,
+        p,
+        n_bernoulli_samples=6,
+        volumetric_scale_factor=4,
+        Vmask_probability=0,
+        Vmask_pct=0.1,
+        transform=None,
+        gt_tomo_path=None
+    ):
+        """
+        Load cryoET dataset with samples taken by Bernoulli sampling Fourier space for self2self denoising.
+
+        The dataset consists of subtomograms of shape [M, C, S, S, S] C (equal to 1) is the number of channels and 
+        S is the subtomogram side length.
+
+        - tomo_path: tomogram path
+        - subtomo_length: side length of the patches to be used for training
+        - p: probability of an element to be zeroed
+        - volumetric_scale_factor: times the original tomogram shape will be reduced 
+        to take bernoulli point samples before upsampling into volumetric bernoulli blind spots.
+        """
+        singleCET_dataset.__init__(
+            self, tomo_path, subtomo_length, p, n_bernoulli_samples, volumetric_scale_factor, 
+            Vmask_probability, Vmask_pct, transform, gt_tomo_path)
+            
+        self.dataF = torch.fft.rfftn(self.data)
+        self.tomoF_shape = self.dataF.shape
+        # here we only create one set of M bernoulli masks to be sampled from
+        self.fourier_samples = self.create_FourierSamples()
+
+        return
+
+    def create_Vmask(self):
+        "Create volumetric blind spot random mask"
+        downsampled_shape = np.array(self.tomoF_shape)// self.vol_scale_factor
+        downsampled_shape = tuple(downsampled_shape)
+
+        # we allow power correction here: not multiplying by (1-p)
+        bernoulli_Vmask = self.dropoutV(torch.ones(downsampled_shape))
+        bernoulli_Vmask = bernoulli_Vmask.unsqueeze(0).unsqueeze(0)
+        # make final shape [C, S, S, S]
+        bernoulli_Vmask = self.upsample(bernoulli_Vmask).squeeze(0)
+
+        return bernoulli_Vmask
+
+    def create_Pmask(self):
+        "Create pointed blind spot random mask"
+        _shape = self.tomoF_shape
+        # we allow power correction here: not multiplying by (1-p)
+        bernoulli_Pmask = self.dropout(torch.ones(_shape))
+        bernoulli_Pmask = bernoulli_Pmask.unsqueeze(0)
+
+        return bernoulli_Pmask
+
+    def create_bernoulliMask(self):
+        if np.random.uniform() < self.Vmask_probability:
+            # might work as an augmentation technique.
+            bernoulli_mask = self.create_Vmask()
+        else:
+            bernoulli_mask = self.create_Pmask()
+
+        return bernoulli_mask
+
+    def create_batchFourierSamples(self, M):
+        bernoulli_mask = torch.stack(
+            [self.create_bernoulliMask() for i in range(M)], axis=0,
+        )
+        fourier_samples = self.dataF.unsqueeze(0).repeat(
+                M, 1, 1, 1, 1
+            )
+        fourier_samples = fourier_samples*bernoulli_mask
+        samples = torch.fft.irfftn(fourier_samples)
+
+        return samples
+
+    def create_FourierSamples(self):
+        "Create a predefined set of fourier space samples that will be sampled from on each __getitem__ call"
+        print('Creating Fourier samples...')
+        M = 2*self.n_bernoulli_samples
+        samples = torch.cat([self.create_batchFourierSamples(M) for i in range(1)])
+        print('Done!')
+
+        return samples
+
+    def __getitem__(self, index: int):
+        center_z, center_y, center_x = self.grid[index]
+        z_min, z_max = (
+            center_z - self.subtomo_length // 2,
+            center_z + self.subtomo_length // 2,
+        )
+        y_min, y_max = (
+            center_y - self.subtomo_length // 2,
+            center_y + self.subtomo_length // 2,
+        )
+        x_min, x_max = (
+            center_x - self.subtomo_length // 2,
+            center_x + self.subtomo_length // 2,
+        )
+
+        if self.gt_data is not None:
+            gt_subtomo = self.gt_data[z_min:z_max, y_min:y_max, x_min:x_max]
+        else:
+            gt_subtomo = None
+
+        sample_idx = np.random.choice(
+            range(len(self.fourier_samples)),
+            2*self.n_bernoulli_samples,
+            replace=False,
+        )
+        samples = self.fourier_samples[sample_idx][..., z_min:z_max, y_min:y_max, x_min:x_max]
+        subtomo, target = torch.split(samples, self.n_bernoulli_samples)
+
+        if gt_subtomo is not None:
+            gt_subtomo = gt_subtomo.unsqueeze(0).repeat(
+                self.n_bernoulli_samples, 1, 1, 1, 1
+            )
+
+        if self.transform:
+            subtomo, target, gt_subtomo = self.transform(subtomo, target, gt_subtomo)
+            
+        return subtomo, target, gt_subtomo
 
 class randomRotation3D(object):
     def __init__(self, p):

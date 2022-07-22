@@ -106,6 +106,21 @@ class self2selfLoss(torch.nn.Module):
             subtomo_pred
         ).mean(0)
 
+class self2selfLoss_noMask(torch.nn.Module):
+    def __init__(self, alpha=1e-4):
+        super().__init__()
+        self.l2 = self2self_L2Loss()
+        self.total_variation = TotalVariation()
+        self.alpha = alpha
+
+    def forward(self, subtomo_pred, target):
+        """
+        Tensors of shape: [B, C, S, S, S]
+        """
+        return self.l2(subtomo_pred, target) + self.alpha * self.total_variation(
+            subtomo_pred
+        ).mean(0)
+
 # class complementary_self2selfLoss(torch.nn.Module):
 #     def __init__(self, alpha=1e-4):
 #         super().__init__()

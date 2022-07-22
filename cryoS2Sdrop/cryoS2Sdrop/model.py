@@ -7,10 +7,13 @@ from torch.utils.tensorboard import SummaryWriter
 from pytorch_msssim import ssim
 from torchmetrics.functional import peak_signal_noise_ratio
 
+# This is just a copy from the original implementation in:
+# https://github.com/NVIDIA/partialconv/tree/master/models
 from cryoS2Sdrop.partialconv3d import PartialConv3d
+from cryoS2Sdrop.partialconv2d import PartialConv2d
 
 
-class Denoising_UNet(pl.LightningModule):
+class Denoising_3DUNet(pl.LightningModule):
     def __init__(self, loss_fn, lr, n_features, p, n_bernoulli_samples):
         """Expected input: [B, C, S, S, S] where B the batch size, C input channels and S the subtomo length.
         The data values are expected to be standardized and [0, 1] scaled.
@@ -232,3 +235,49 @@ class Denoising_UNet(pl.LightningModule):
 
         # take the mean wrt batch
         return monitor/len(bernoulliBatch_gt_subtomo)
+
+class Denoising_3DUNet_v2(Denoising_3DUNet):
+    def training_step(self, batch):
+        bernoulli_subtomo, target, gt_subtomo = batch
+        pred = self(bernoulli_subtomo)
+        loss = self.loss_fn(pred, target)
+
+        self.log(
+            "hp/train_loss",
+            loss,
+            on_step=True,
+            on_epoch=True,
+            prog_bar=True,
+            sync_dist=True,
+        )
+
+        if gt_subtomo is not None:
+            bernoulliBatch_subtomo = self.batch2bernoulliBatch(bernoulli_subtomo)
+            bernoulliBatch_gt_subtomo = self.batch2bernoulliBatch(gt_subtomo)
+            monitor_ssim = self.ssim_monitoring(bernoulliBatch_subtomo, bernoulliBatch_gt_subtomo)
+            monitor_psnr = self.psnr_monitoring(bernoulliBatch_subtomo, bernoulliBatch_gt_subtomo)
+
+            self.log(
+                "hp/ssim",
+                monitor_ssim,
+                on_step=False,
+                on_epoch=True,
+                prog_bar=False,
+                sync_dist=True,
+            )
+
+            self.log(
+                "hp/psnr",
+                monitor_psnr,
+                on_step=False,
+                on_epoch=True,
+                prog_bar=False,
+                sync_dist=True,
+            )
+
+        tensorboard = self.logger.experiment
+        tensorboard.add_histogram(
+            "Intensity distribution", pred.detach().cpu().numpy().flatten()
+        )
+
+        return loss

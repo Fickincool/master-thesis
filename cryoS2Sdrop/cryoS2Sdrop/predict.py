@@ -1,4 +1,4 @@
-from cryoS2Sdrop.model import Denoising_UNet
+from cryoS2Sdrop.model import Denoising_3DUNet, Denoising_3DUNet_v2
 from cryoS2Sdrop.trainer import aggregate_bernoulliSamples
 import torch
 from torch.utils.data import DataLoader
@@ -22,7 +22,8 @@ def load_model(logdir, DataParallel=False):
     assert len(glob(logdir + "checkpoints/*.ckpt")) == 1
     ckpt_file = ckpt_file[0]
 
-    model = Denoising_UNet.load_from_checkpoint(ckpt_file).cuda()
+    # model = Denoising_3DUNet.load_from_checkpoint(ckpt_file).cuda()
+    model = Denoising_3DUNet_v2.load_from_checkpoint(ckpt_file).cuda()
     if DataParallel:
         model = torch.nn.DataParallel(model)
 
