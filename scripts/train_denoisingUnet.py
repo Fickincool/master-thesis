@@ -40,8 +40,8 @@ gt_cet_path = None
 p = 0.3  # dropout probability
 n_bernoulli_samples = 6
 volumetric_scale_factor = 4
-Vmask_probability = 0
-Vmask_pct = 0.3
+Vmask_probability = 0.5
+Vmask_pct = 0.1
 
 subtomo_length = 96
 n_features = 48

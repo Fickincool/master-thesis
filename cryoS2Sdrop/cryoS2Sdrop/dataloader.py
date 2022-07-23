@@ -1,3 +1,4 @@
+from multiprocessing.sharedctypes import Value
 import torch
 import numpy as np
 from torch.utils.data import Dataset
@@ -237,8 +238,15 @@ class singleCET_FourierDataset(singleCET_dataset):
         # we allow power correction here: not multiplying by (1-p)
         bernoulli_Vmask = self.dropoutV(torch.ones(downsampled_shape))
         bernoulli_Vmask = bernoulli_Vmask.unsqueeze(0).unsqueeze(0)
-        # make final shape [C, S, S, S]
-        bernoulli_Vmask = self.upsample(bernoulli_Vmask).squeeze(0)
+        bernoulli_Vmask = self.upsample(bernoulli_Vmask)
+        extra_row = bernoulli_Vmask[...,-1].unsqueeze(-1)
+        # make final shape [C, S, S, S] last row is to account for Nyquist Frequency
+        bernoulli_Vmask = torch.cat([bernoulli_Vmask, extra_row], dim=-1).squeeze(0)
+
+        if bernoulli_Vmask[0, ...].shape!=self.dataF.shape:
+            raise ValueError(
+                "Volumetric mask with shape %s has a different shape in the last three components as dataF with shape %s" %(str(bernoulli_Vmask.shape), str(self.dataF.shape))
+                )
 
         return bernoulli_Vmask
 
@@ -258,6 +266,7 @@ class singleCET_FourierDataset(singleCET_dataset):
         else:
             bernoulli_mask = self.create_Pmask()
 
+
         return bernoulli_mask
 
     def create_batchFourierSamples(self, M):
@@ -268,7 +277,7 @@ class singleCET_FourierDataset(singleCET_dataset):
                 M, 1, 1, 1, 1
             )
         fourier_samples = fourier_samples*bernoulli_mask
-        samples = torch.fft.irfftn(fourier_samples)
+        samples = torch.fft.irfftn(fourier_samples, dim=[-3, -2, -1])
 
         return samples
 
