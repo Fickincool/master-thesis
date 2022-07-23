@@ -226,10 +226,10 @@ class Denoising_3DUNet(pl.LightningModule):
         monitor = 0
         for bBatch_subtomo, bBatch_gt in zip(bernoulliBatch_subtomo, bernoulliBatch_gt_subtomo):
             i, j = bBatch_subtomo.mean((0)), bBatch_gt.mean((0)) # 1 Channel, 3D images [C, S, S, S]
-            # data is standardized, we don't expect to see any value further than 6 std from the origin
-            data_range = 12 
-            if j.abs().max() > 6:
-                raise ValueError('Found input values for ground truth further than 6 std away from the origin.')
+            # data is standardized, we don't expect to see any value further than 10 std from the origin
+            data_range = 18 
+            if j.abs().max() > 9:
+                raise ValueError('Found input values for ground truth further than 9 std away from the origin.')
             _monitor = peak_signal_noise_ratio(i, j, data_range)
             monitor += _monitor
 

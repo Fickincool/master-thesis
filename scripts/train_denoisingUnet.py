@@ -8,92 +8,114 @@ from time import sleep
 from tomoSegmentPipeline.utils.common import write_array
 from tomoSegmentPipeline.utils import setup
 from cryoS2Sdrop.dataloader import singleCET_dataset, singleCET_FourierDataset
-from cryoS2Sdrop.trainer import denoisingTrainer
-from cryoS2Sdrop.dataloader import randomRotation3D
+from cryoS2Sdrop.trainer import denoisingTrainer, aggregate_bernoulliSamples, aggregate_bernoulliSamples2
+from cryoS2Sdrop.dataloader import randomRotation3D, randomRotation3D_fourierSamples
 from cryoS2Sdrop.losses import self2self_L2Loss, self2selfLoss, self2selfLoss_noMask
+from cryoS2Sdrop.model import Denoising_3DUNet, Denoising_3DUNet_v2
 from cryoS2Sdrop.predict import load_model, predict_full_tomogram
 from pytorch_msssim import ssim
 from torchmetrics.functional import peak_signal_noise_ratio
 
 PARENT_PATH = setup.PARENT_PATH
 
+###################### Input data definition ###################
+
 # cet_path = os.path.join(PARENT_PATH, 'data/raw_cryo-ET/tomo02.mrc')
 # cet_path = os.path.join(PARENT_PATH, 'data/S2SDenoising/dummy_tomograms/tomo04_deconvDummy.mrc')
-cet_path = os.path.join(
-    PARENT_PATH, "data/S2SDenoising/dummy_tomograms/tomo02_dummy.mrc"
-)
+# cet_path = os.path.join(
+#     PARENT_PATH, "data/S2SDenoising/dummy_tomograms/tomo02_dummy.mrc"
+# )
 
-gt_cet_path = None
+# gt_cet_path = None
 
 # simulated_model = 'model16'
-# cet_path = os.path.join(
-#     PARENT_PATH, "data/S2SDenoising/dummy_tomograms/tomoPhantom_%s_Poisson5000+Gauss5+stripes.mrc" %simulated_model
-# )
+simulated_model = 'model14'
+cet_path = os.path.join(
+    PARENT_PATH, "data/S2SDenoising/dummy_tomograms/tomoPhantom_%s_Poisson5000+Gauss5+stripes.mrc" %simulated_model
+)
+
 # simulated_model = 'model9'
 # cet_path = os.path.join(
 #     PARENT_PATH, "data/S2SDenoising/dummy_tomograms/tomoPhantom_%s_Poisson5000+Gauss5.mrc" %simulated_model
 # )
-# gt_cet_path = os.path.join(
-#     PARENT_PATH, "data/S2SDenoising/dummy_tomograms/tomoPhantom_%s.mrc" %simulated_model
-# )
 
+gt_cet_path = os.path.join(
+    PARENT_PATH, "data/S2SDenoising/dummy_tomograms/tomoPhantom_%s.mrc" %simulated_model
+)
+
+##################################### Model and dataloader ####################################################
 p = 0.3  # dropout probability
 n_bernoulli_samples = 6
 volumetric_scale_factor = 4
-Vmask_probability = 0.5
+Vmask_probability = 0
 Vmask_pct = 0.1
 
 subtomo_length = 96
 n_features = 48
 
-tensorboard_logdir = os.path.join(PARENT_PATH, "data/S2SDenoising/tryout_model_logs")
-comment = 'Try Fourier sampling.'
+tensorboard_logdir = os.path.join(PARENT_PATH, "data/S2SDenoising/tryout_model_logs/%s/" %simulated_model)
+comment = 'Compare Fourier and regular Bernoulli sampling.'
 
 batch_size = 2
 epochs = 10
 lr = 1e-4
 num_gpus = 2
 
-# transform = randomRotation3D(0.5)
-transform = None
-# loss_fn = self2selfLoss(alpha=0)
-loss_fn = self2selfLoss_noMask(alpha=0)
+my_dataset = singleCET_FourierDataset(
+            cet_path,
+            subtomo_length=subtomo_length,
+            p=p,
+            n_bernoulli_samples=n_bernoulli_samples,
+            volumetric_scale_factor=volumetric_scale_factor,
+            Vmask_probability=Vmask_probability,
+            Vmask_pct=Vmask_pct,
+            transform=None,
+            gt_tomo_path=gt_cet_path
+        )
 
+if type(my_dataset)==singleCET_dataset:
+    collate_fn = aggregate_bernoulliSamples
+    loss_fn = self2selfLoss(alpha=0)
+    model = Denoising_3DUNet(loss_fn, lr, n_features, p, n_bernoulli_samples)
+    model_name = 's2sDenoise3D'
+    transform = randomRotation3D(0.5)
+    my_dataset.transform = transform
+
+if type(my_dataset)==singleCET_FourierDataset:
+    collate_fn = aggregate_bernoulliSamples2
+    loss_fn = self2selfLoss_noMask(alpha=0)
+    model = Denoising_3DUNet_v2(loss_fn, lr, n_features, 0.3, n_bernoulli_samples)
+    model_name = 's2sDenoise3D_fourier'
+    transform = randomRotation3D_fourierSamples(0.5)
+
+
+##################################### Training ####################################################
 
 s2s_trainer = denoisingTrainer(
-    cet_path,
-    gt_cet_path,
-    subtomo_length,
-    lr,
-    n_features,
-    p,
-    n_bernoulli_samples,
-    volumetric_scale_factor,
-    Vmask_probability,
-    Vmask_pct,
+    model,
+    my_dataset,
     tensorboard_logdir,
-    loss_fn,
+    model_name=model_name
 )
 
-s2s_trainer.train2(batch_size, epochs, num_gpus, transform=transform, comment=comment)
+s2s_trainer.train(collate_fn, batch_size, epochs, num_gpus, transform=transform, comment=comment)
 
 version = "version_%i" % s2s_trainer.model.logger.version
 
 del s2s_trainer
 
-print('Sleeping...')
-sleep(30)
-print('Done!')
-
-################### Make prediction plots
+################### Make prediction plots ########################
 
 torch.cuda.empty_cache()
 
+print('Sleeping...')
+sleep(60)
+print('Done!')
+
 logdir = os.path.join(tensorboard_logdir, "%s/" % version)
 
-model, hparams = load_model(logdir, DataParallel=True)
-# my_dataset = singleCET_dataset(cet_path, subtomo_length, p=p, gt_tomo_path=gt_cet_path)
-my_dataset = singleCET_FourierDataset(cet_path, subtomo_length, p=p, gt_tomo_path=gt_cet_path)
+model, hparams = load_model(logdir, model, DataParallel=True)
+my_dataset.transform = None
 
 batch_size = 10
 denoised_tomo = []

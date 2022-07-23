@@ -47,9 +47,9 @@ class singleCET_dataset(Dataset):
         self.grid = self.create_grid()
         self.transform = transform  # think how to implement this
         self.p = p
-        self.p0 = Vmask_pct
+        self.Vmask_pct = Vmask_pct
         self.dropout = torch.nn.Dropout(p=p)
-        self.dropoutV = torch.nn.Dropout(p=self.p0)
+        self.dropoutV = torch.nn.Dropout(p=self.Vmask_pct)
         self.upsample = torch.nn.Upsample(scale_factor=volumetric_scale_factor)
         self.vol_scale_factor = volumetric_scale_factor
         self.channels = 1
@@ -65,6 +65,10 @@ class singleCET_dataset(Dataset):
         if self.subtomo_length % self.vol_scale_factor != 0:
             raise ValueError(
                 "Length of subtomograms must be a multiple of the volumetric scale factor."
+            )
+        if self.subtomo_length % 32 != 0:
+            raise ValueError(
+                "Length of subtomograms must be a multiple of 32 to run the network."
             )
 
         return
@@ -90,7 +94,7 @@ class singleCET_dataset(Dataset):
         downsampled_shape = tuple(downsampled_shape)
 
         # avoid power correction from dropout and set shape for upsampling
-        bernoulli_Vmask = self.dropoutV(torch.ones(downsampled_shape)) * (1 - self.p0)
+        bernoulli_Vmask = self.dropoutV(torch.ones(downsampled_shape)) * (1 - self.Vmask_pct)
         bernoulli_Vmask = bernoulli_Vmask.unsqueeze(0).unsqueeze(0)
         # make final shape [C, S, S, S]
         bernoulli_Vmask = self.upsample(bernoulli_Vmask).squeeze(0)
@@ -285,7 +289,7 @@ class singleCET_FourierDataset(singleCET_dataset):
         "Create a predefined set of fourier space samples that will be sampled from on each __getitem__ call"
         print('Creating Fourier samples...')
         M = 2*self.n_bernoulli_samples
-        samples = torch.cat([self.create_batchFourierSamples(M) for i in range(1)])
+        samples = torch.cat([self.create_batchFourierSamples(M) for i in range(2)])
         print('Done!')
 
         return samples
@@ -353,6 +357,64 @@ class randomRotation3D(object):
                 gt_subtomo = torch.rot90(gt_subtomo, k=k, dims=(1, 2))
 
         return subtomo, gt_subtomo
+
+    def __repr__(self):
+        return repr("randomRotation3D with probability %.02f" % self.p)
+
+class randomRotation3D_fourierSamples(object):
+    def __init__(self, p):
+        assert p >= 0 and p <= 1
+        self.p = p
+        
+    def make3D_rotation(self, subtomo, target, gt_subtomo):
+        "3D rotation in ZYX sets of images."
+        # 180º rotation around Y axis
+        if np.random.uniform() < self.p:
+            subtomo = torch.rot90(subtomo, k=2, dims=(0, 2))
+            target = torch.rot90(target, k=2, dims=(0, 2))
+            gt_subtomo = torch.rot90(gt_subtomo, k=2, dims=(0, 2))
+        # 180º rotation around X axis
+        if np.random.uniform() < self.p:
+            subtomo = torch.rot90(subtomo, k=2, dims=(0, 1))
+            target = torch.rot90(target, k=2, dims=(0, 1))
+            gt_subtomo = torch.rot90(gt_subtomo, k=2, dims=(0, 1))
+        # rotation between 90º and 270º around Z axis
+        if np.random.uniform() < self.p:
+            k = int(np.random.choice([1, 2, 3]))
+            subtomo = torch.rot90(subtomo, k=k, dims=(1, 2))
+            target = torch.rot90(target, k=k, dims=(1, 2))
+            gt_subtomo = torch.rot90(gt_subtomo, k=k, dims=(1, 2))
+        
+        return subtomo, target, gt_subtomo
+
+    def __call__(self, subtomo, target, gt_subtomo):
+        """
+        Input are of shape [M, C, S, S, S]
+        First flatten the arrays, then apply the rotations on the 4D arrays, then reshape to original shape.
+        """
+        s, t = subtomo.flatten(start_dim=0, end_dim=1), target.flatten(start_dim=0, end_dim=1)
+        if gt_subtomo is not None:
+            g = gt_subtomo.flatten(start_dim=0, end_dim=1)
+        else:
+            g = torch.zeros_like(s)
+            
+        subtomo_rotated, target_rotated, gt_subtomo_rotated = [], [], []
+
+        for values in zip(s, t, g):
+            a, b, c = self.make3D_rotation(*values)
+            subtomo_rotated.append(a)
+            target_rotated.append(b)
+            gt_subtomo_rotated.append(c)
+
+        subtomo_rotated = torch.stack(subtomo_rotated).reshape(subtomo.shape)
+        target_rotated = torch.stack(target_rotated).reshape(target.shape)
+        gt_subtomo_rotated = torch.stack(gt_subtomo_rotated).reshape(gt_subtomo.shape)
+        
+        # deal with no gt_subtomo case. Maybe not the best, since we calculate 1 too many rotations
+        if (gt_subtomo_rotated==0).all():
+            gt_subtomo_rotated = None
+        
+        return subtomo_rotated, target_rotated, gt_subtomo_rotated
 
     def __repr__(self):
         return repr("randomRotation3D with probability %.02f" % self.p)

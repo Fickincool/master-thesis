@@ -12,7 +12,7 @@ def aux_forward(model, subtomo):
         return model(subtomo)
 
 
-def load_model(logdir, DataParallel=False):
+def load_model(logdir, model, DataParallel=False):
     "Returns loaded model from checkpoint and hyperparameters"
 
     with open(glob(logdir + "hparams.yaml")[0]) as f:
@@ -22,8 +22,7 @@ def load_model(logdir, DataParallel=False):
     assert len(glob(logdir + "checkpoints/*.ckpt")) == 1
     ckpt_file = ckpt_file[0]
 
-    # model = Denoising_3DUNet.load_from_checkpoint(ckpt_file).cuda()
-    model = Denoising_3DUNet_v2.load_from_checkpoint(ckpt_file).cuda()
+    model = model.load_from_checkpoint(ckpt_file).cuda()
     if DataParallel:
         model = torch.nn.DataParallel(model)
 
