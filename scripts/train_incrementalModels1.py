@@ -25,42 +25,43 @@ train_tomos = ['tomo02', 'tomo03', 'tomo17']
 concat_train_ids = sorted([s.replace('tomo', '') for s in train_tomos])
 concat_train_ids = '-'.join(concat_train_ids)
 
-# in 2 days, at most 3 complete rounds of incremental models seem to be able to finish
-for input_type in ['rawCET', 'cryoCARE', 'isoNET', 'cryoCARE+isoNET']:    
-    for nPatches in range(4, 34, 4):
+for i in range(5):
+    # in 2 days, at most 3 complete rounds of incremental models seem to be able to finish
+    for input_type in ['rawCET', 'cryoCARE', 'isoNET', 'cryoCARE+isoNET']:    
+        for nPatches in range(4, 34, 4):
 
-        tb_logdir = os.path.join(PARENT_PATH, 'data/model_logs/incremental_models/logs/BaselineModel/%s/train%s/nPatches_%i' %(input_type, concat_train_ids, nPatches))
-        model_name = 'Baseline_'+input_type
-        
-        epochs = 1000
-        Ncl = 2
-        dim_in = 84
-        lr = 1e-4
-        weight_decay = 0
-        Lrnd = 18
-        augment_data = True
-        batch_size = 22
-        pretrained_model = None
+            tb_logdir = os.path.join(PARENT_PATH, 'data/model_logs/incremental_models/logs/BaselineModel/%s/train%s/nPatches_%i' %(input_type, concat_train_ids, nPatches))
+            model_name = 'Baseline_'+input_type
+            
+            epochs = 1000
+            Ncl = 2
+            dim_in = 84
+            lr = 1e-4
+            weight_decay = 0
+            Lrnd = 18
+            augment_data = True
+            batch_size = 22
+            pretrained_model = None
 
-        trainer = Train(Ncl=Ncl, dim_in=dim_in, lr=lr, weight_decay=weight_decay, Lrnd=Lrnd, tensorboard_logdir=tb_logdir,
-        model_name=model_name, augment_data=augment_data, 
-        batch_size=batch_size, epochs=epochs, pretrained_model=pretrained_model)
+            trainer = Train(Ncl=Ncl, dim_in=dim_in, lr=lr, weight_decay=weight_decay, Lrnd=Lrnd, tensorboard_logdir=tb_logdir,
+            model_name=model_name, augment_data=augment_data, 
+            batch_size=batch_size, epochs=epochs, pretrained_model=pretrained_model)
 
-        early_stop_callback = EarlyStopping(
-                monitor='hp/val_loss',
-                min_delta=1e-4,
-                patience=100,
-                verbose=True,
-                mode='min'
-                )
+            early_stop_callback = EarlyStopping(
+                    monitor='hp/val_loss',
+                    min_delta=1e-4,
+                    patience=100,
+                    verbose=True,
+                    mode='min'
+                    )
 
-        lr_monitor = LearningRateMonitor(logging_interval='step')
-        callbacks = [early_stop_callback, lr_monitor]
+            lr_monitor = LearningRateMonitor(logging_interval='step')
+            callbacks = [early_stop_callback, lr_monitor]
 
-        trainer.launch(train_tomos, val_tomos, input_type=input_type, num_gpus=2, accelerator='ddp', 
-        nPatches_training=nPatches, num_workers=1, train_callbacks=callbacks)
+            trainer.launch(train_tomos, val_tomos, input_type=input_type, num_gpus=2, accelerator='ddp', 
+            nPatches_training=nPatches, num_workers=1, train_callbacks=callbacks)
 
-        del trainer
+            del trainer
 
 
 
