@@ -289,7 +289,7 @@ class singleCET_FourierDataset(singleCET_dataset):
         "Create a predefined set of fourier space samples that will be sampled from on each __getitem__ call"
         print('Creating Fourier samples...')
         M = 2*self.n_bernoulli_samples
-        samples = torch.cat([self.create_batchFourierSamples(M) for i in range(2)])
+        samples = torch.cat([self.create_batchFourierSamples(M) for i in range(10)])
         print('Done!')
 
         return samples
