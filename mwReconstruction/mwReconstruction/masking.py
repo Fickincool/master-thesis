@@ -106,8 +106,8 @@ def make_N_neg_matrix(dr, neg_mask, power_mask, n_neighbors=64):
     - power_mask: boolean array indicating low power coefficients. Shape: (Z,X)
     """
     tomo_shape = neg_mask.shape
-    
-    global_to_neg_mapping = np.where(neg_mask.flatten()==1)[0]
+
+    global_to_neg_mapping = np.where(neg_mask.flatten() == 1)[0]
     _mapping = zip(global_to_neg_mapping, range(len(global_to_neg_mapping)))
     global_to_neg_mapping = dict(_mapping)
 
@@ -128,24 +128,32 @@ def make_N_neg_matrix(dr, neg_mask, power_mask, n_neighbors=64):
         ring_uncorrupted_nghbrs = np.nonzero(ring_uncorrupted_mask.flatten())[0]
         # ring_corrupted_nghbrs = np.nonzero(ring_corrupted_mask.flatten())[0]
 
-        k = min(len(ring_uncorrupted_nghbrs)-1, n_neighbors)
-        k = max(0, k) # it might happen that we have no uncorrupted neighbors
+        k = min(len(ring_uncorrupted_nghbrs) - 1, n_neighbors)
+        k = max(0, k)  # it might happen that we have no uncorrupted neighbors
 
         def retrieve_mapped_random_neighbors(n, k):
             "Map flat global indices to flat negative indices."
-            neighbor_pool = ring_uncorrupted_nghbrs[ring_uncorrupted_nghbrs!=n]
-            if k>0:
-                neighbor_global_indices = np.random.choice(neighbor_pool, k, replace=False)
+            neighbor_pool = ring_uncorrupted_nghbrs[ring_uncorrupted_nghbrs != n]
+            if k > 0:
+                neighbor_global_indices = np.random.choice(
+                    neighbor_pool, k, replace=False
+                )
                 own_neighbor = global_to_neg_mapping[n]
-                neighbors = np.append(own_neighbor, itemgetter(*neighbor_global_indices)(global_to_neg_mapping))
+                neighbors = np.append(
+                    own_neighbor,
+                    itemgetter(*neighbor_global_indices)(global_to_neg_mapping),
+                )
             else:
                 neighbors = global_to_neg_mapping[n]
             return neighbors
 
-        # for each corrupted negative neighbor, get a random sample of size k from the uncorrupted neighbors. 
+        # for each corrupted negative neighbor, get a random sample of size k from the uncorrupted neighbors.
         # The first neighbor of a point is itself.
         # Finally map global indices to negative indices in a way that is consistent with the GCN logic
-        aux = pd.DataFrame([retrieve_mapped_random_neighbors(n, k) for n in ring_neg_nghbrs], index=ring_neg_nghbrs)
+        aux = pd.DataFrame(
+            [retrieve_mapped_random_neighbors(n, k) for n in ring_neg_nghbrs],
+            index=ring_neg_nghbrs,
+        )
 
         return aux
 
@@ -160,13 +168,13 @@ def make_N_neg_matrix(dr, neg_mask, power_mask, n_neighbors=64):
     aux = pd.DataFrame(range(aux), index=range(aux))
 
     # get the final data frame with all negative flattened indices
-    N_neg = N_neg.join(aux, on=0, how='right', rsuffix='_r')
-    N_neg['0'] = N_neg['0_r']
-    N_neg.index = N_neg['key_0'].values
+    N_neg = N_neg.join(aux, on=0, how="right", rsuffix="_r")
+    N_neg["0"] = N_neg["0_r"]
+    N_neg.index = N_neg["key_0"].values
 
-    N_neg.drop(['0_r', 'key_0'], axis=1, inplace=True)
+    N_neg.drop(["0_r", "key_0"], axis=1, inplace=True)
 
-    N_neg.columns = range(n_neighbors+1)
+    N_neg.columns = range(n_neighbors + 1)
     N_neg = N_neg.sort_index()
 
     return N_neg

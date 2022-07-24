@@ -1,7 +1,5 @@
 import os
-from cryoS2Sdrop.dataloader import singleCET_dataset
-from cryoS2Sdrop.model import Denoising_UNet
-from cryoS2Sdrop.losses import self2self_L2Loss
+import yaml
 
 from torch.utils.data import DataLoader
 import torch
@@ -11,67 +9,141 @@ from pytorch_lightning import loggers as pl_loggers
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 from pytorch_lightning.callbacks import LearningRateMonitor
 
-class denoisingTrainer():
-    def __init__(self, cet_path, subtomo_length, lr, n_bernoulli_samples, n_features, p, tensorboard_logdir):
+
+class denoisingTrainer:
+    def __init__(
+        self,
+        model,
+        my_dataset,
+        tensorboard_logdir,
+        model_name
+    ):
         super().__init__()
 
-        # Hardcoded
-        self.loss_fn = self2self_L2Loss()
-        self.model = Denoising_UNet(self.loss_fn, lr, n_bernoulli_samples, n_features, p)
-
-        # model and training stuff
-        self.cet_path = cet_path
-        self.lr = lr
-        self.subtomo_length = subtomo_length  
-        self.p = p
-        self.n_bernoulli_samples = n_bernoulli_samples
-        self.n_features = n_features
+        self.model = model
+        self.dataset = my_dataset
 
         # logs
         self.tensorboard_logdir = tensorboard_logdir
-        self.model_name = 's2sUNet'
+        self.model_name = model_name
+
+        self.run_init_asserts()
 
         return
 
-    def train(self, batch_size, epochs, num_gpus, accelerator="gpu", strategy="ddp"):
+    def run_init_asserts(self):
+        
+        return
 
-        my_dataset = singleCET_dataset(self.cet_path, subtomo_length=self.subtomo_length, p=self.p,
-        n_samples=self.n_bernoulli_samples)
+    def train(
+        self,
+        collate_fn,
+        batch_size,
+        epochs,
+        num_gpus,
+        accelerator="gpu",
+        strategy="ddp",
+        transform=None,
+        comment=None
+    ):
 
-        print('Size of dataset: %i, Steps per epoch: %i. \n' %(len(my_dataset), len(my_dataset)/(batch_size*num_gpus)))
+        print(
+            "Size of dataset: %i, Steps per epoch: %i. \n"
+            % (len(self.dataset), len(self.dataset) / (batch_size * num_gpus))
+        )
 
-        train_loader = DataLoader(my_dataset, batch_size=batch_size, shuffle=False, pin_memory=True)
+        train_loader = DataLoader(
+            self.dataset,
+            batch_size=batch_size,
+            shuffle=True,
+            pin_memory=True,
+            collate_fn=collate_fn,
+        )
 
-        logger = pl_loggers.TensorBoardLogger(self.tensorboard_logdir, name='',  default_hp_metric=False)
+        logger = pl_loggers.TensorBoardLogger(
+            self.tensorboard_logdir, name="", default_hp_metric=False
+        )
 
-        early_stop_callback = EarlyStopping(monitor='hp/train_loss', min_delta=1e-4, patience=100,
-                                            verbose=True, mode='min')
+        early_stop_callback = EarlyStopping(
+            monitor="hp/train_loss",
+            min_delta=1e-4,
+            patience=100,
+            verbose=True,
+            mode="min",
+        )
 
-        lr_monitor = LearningRateMonitor(logging_interval='step')
+        lr_monitor = LearningRateMonitor(logging_interval="step")
         callbacks = [early_stop_callback, lr_monitor]
 
-        trainer = Trainer(logger=logger, log_every_n_steps=1, gpus=num_gpus, max_epochs=epochs,
-        enable_progress_bar = False, callbacks=callbacks, accelerator=accelerator, strategy=strategy)
+        trainer = Trainer(
+            logger=logger,
+            log_every_n_steps=1,
+            gpus=num_gpus,
+            max_epochs=epochs,
+            enable_progress_bar=False,
+            callbacks=callbacks,
+            accelerator=accelerator,
+            strategy=strategy,
+        )
 
         trainer.fit(self.model, train_loader)
 
-        # if trainer.is_global_zero:
-        #     name_model = '%s_ep%i_subtomoLen%i_lr%f.model' %(self.model_name, epochs, self.subtomo_length, self.lr)
-        #     self.save_model(name_model)   
+        if trainer.is_global_zero:
+            #### Log additional hyperparameters #####
+            hparams_file = os.path.join(
+                self.tensorboard_logdir, "version_%i" % self.model.logger.version
+            )
+            hparams_file = os.path.join(hparams_file, "hparams.yaml")
+
+            dataset_params = ['tomo_path', 'gt_tomo_path', 'subtomo_length',
+             'vol_scale_factor', 'Vmask_probability', 'Vmask_pct']
+
+            extra_hparams = {
+                "transform": transform,
+                "Dataloader": type(self.dataset),
+                "Version_comment":comment,
+                "Dataloader.p": self.dataset.__dict__['p']
+            }
+
+            for key in dataset_params:
+                extra_hparams[key] = self.dataset.__dict__[key]
+
+            sdump = yaml.dump(extra_hparams)
+
+            with open(hparams_file, "a") as fo:
+                fo.write(sdump)
 
         return
 
-    # def save_model(self, name_model):
-    #     "Save the trained model in the path_model folder."
+def aggregate_bernoulliSamples(batch):
+    """Concatenate batch+bernoulli samples. Shape [B*M, C, S, S, S]
 
-    #     # Last version is the one currently being logged
-    #     path_model = self.model.logger.log_dir
-    #     if not os.path.exists(path_model):
-    #         os.mkdir(path_model)
-            
-    #     name_model = os.path.join(path_model, name_model)
-    #     print('Saving model at: ', name_model)
-    #     torch.save(self.model.state_dict(), name_model)
+    Dataset returns [M, C, S, S, S] and dataloader returns [B, M, C, S, S, S].
+    This function concatenates the array in order to make a batch be the set of bernoulli samples of each of the B subtomos.
+    """
+    bernoulli_subtomo = torch.cat([b[0] for b in batch], axis=0)
+    target = torch.cat([b[1] for b in batch], axis=0)
+    bernoulli_mask = torch.cat([b[2] for b in batch], axis=0)
+    
+    try:
+        gt_subtomo = torch.cat([b[3] for b in batch], axis=0)
+    except TypeError:
+        gt_subtomo = None
+    
+    return bernoulli_subtomo, target, bernoulli_mask, gt_subtomo
 
-    #     return
+def aggregate_bernoulliSamples2(batch):
+    """Concatenate batch+bernoulli samples. Shape [B*M, C, S, S, S]
 
+    Dataset returns [M, C, S, S, S] and dataloader returns [B, M, C, S, S, S].
+    This function concatenates the array in order to make a batch be the set of bernoulli samples of each of the B subtomos.
+    """
+    bernoulli_subtomo = torch.cat([b[0] for b in batch], axis=0)
+    target = torch.cat([b[1] for b in batch], axis=0)
+    
+    try:
+        gt_subtomo = torch.cat([b[2] for b in batch], axis=0)
+    except TypeError:
+        gt_subtomo = None
+    
+    return bernoulli_subtomo, target, gt_subtomo

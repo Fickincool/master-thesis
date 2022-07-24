@@ -65,7 +65,7 @@ class Loss(nn.Module):
         #     torch.log10(self.original).squeeze().unsqueeze(0).unsqueeze(0),
         # )
         target = fft.fftshift(fft.fft2(target))
-        
+
         mse1 = self.lr(xf.real, target.real)
         mse2 = self.li(xf.imag, target.imag)
 
