@@ -26,8 +26,9 @@ tomo_name = 'tomo02_dummy'
 cet_path = os.path.join(
     PARENT_PATH, "data/S2SDenoising/dummy_tomograms/%s.mrc" %tomo_name
 )
-
-gt_cet_path = None
+gt_cet_path = os.path.join(
+    PARENT_PATH, "/home/ubuntu/Thesis/data/S2SDenoising/dummy_tomograms/%s_cryoCAREDummy.mrc" %tomo_name
+)
 
 # simulated_model = 'model16'
 # simulated_model = 'model14'
@@ -88,7 +89,7 @@ if type(my_dataset)==singleCET_dataset:
 
 if type(my_dataset)==singleCET_FourierDataset:
     collate_fn = aggregate_bernoulliSamples2
-    loss_fn = self2selfLoss_noMask(alpha=1e-5)
+    loss_fn = self2selfLoss_noMask(alpha=0)
     model = Denoising_3DUNet_v2(loss_fn, lr, n_features, 0.3, n_bernoulli_samples)
     model_name = 's2sDenoise3D_fourier'
     transform = randomRotation3D_fourierSamples(0.5)
