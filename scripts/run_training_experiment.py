@@ -2,12 +2,11 @@ import os
 import json
 
 
-experiment_name = 'rawTomo_denoising_comparison'
+experiment_name = 'denoising_comparison'
 experiment_args = {
     'e0': {'dataset':'singleCET_dataset', 'epochs':400},
     'e1': {'dataset':'singleCET_FourierDataset', 'epochs':400},
-    'e2': {'dataset':'singleCET_ProjectedDataset', 'batch_size':12, 'subtomo_length':64, 'epochs':2.3*400},
-    'e3': {'dataset':'singleCET_ProjectedDataset', 'batch_size':6, 'subtomo_length':96, 'epochs':2.3*400},
+    'e2': {'dataset':'singleCET_ProjectedDataset', 'batch_size':6, 'epochs':2.3*400},
     }
 
 experiment_logdir = '/home/ubuntu/Thesis/data/S2SDenoising/experiment_args'
@@ -41,7 +40,7 @@ if __name__ == "__main__":
         json.dump(experiment_args, f)
 
     for exp in experiment_args:
-        tomo_name = 'tomo02_dummy'
+        tomo_name = 'tomo02_cryoCAREDummy_noisyPerlin'
         args = default_args.copy()
         args['tomo_name'] = tomo_name
         # the new args is the dictionary of the experiment arguments
