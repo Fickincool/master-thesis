@@ -13,11 +13,32 @@ def aux_forward(model, subtomo):
         return model(subtomo)
 
 
-def load_model(logdir, model, DataParallel=False):
+def load_model(logdir, DataParallel=False):
     "Returns loaded model from checkpoint and hyperparameters"
 
     with open(glob(logdir + "hparams.yaml")[0]) as f:
         hparams = yaml.load(f, Loader=yaml.BaseLoader)
+
+    # yaml is stupid
+    with open(logdir + "hparams.yaml") as f:
+        s = f.readlines()
+        try:
+            dataloader = [x for x in s if 'Dataloader' in x][0]
+            dataset = dataloader.split('.')[-1].replace('\n', '').replace('\'', '').strip()
+        except:
+            dataset = 'Unknown'
+
+    hparams['dataset'] = dataset
+
+    p = float(hparams['p']) # dropout (zeroing) probability
+    n_features = int(hparams['n_features'])
+    n_bernoulli_samples = int(hparams['n_bernoulli_samples'])
+
+    if dataset in ['singleCET_dataset']:
+        model = Denoising_3DUNet(None, 0, n_features, p, n_bernoulli_samples)
+        
+    if dataset in ['singleCET_FourierDataset', 'singleCET_ProjectedDataset']:
+        model = Denoising_3DUNet_v2(None, 0, n_features, p, n_bernoulli_samples)
 
     ckpt_file = glob(logdir + "checkpoints/*.ckpt")
     assert len(glob(logdir + "checkpoints/*.ckpt")) == 1
