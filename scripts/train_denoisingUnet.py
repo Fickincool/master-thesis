@@ -60,8 +60,9 @@ elif tomo_name.startswith('tomo'):
     cet_path = os.path.join(
         PARENT_PATH, "data/S2SDenoising/dummy_tomograms/%s.mrc" %tomo_name
     )
+    _name = tomo_name.split('_')[0]
     gt_cet_path = os.path.join(
-        PARENT_PATH, "/home/ubuntu/Thesis/data/S2SDenoising/dummy_tomograms/%s_cryoCAREDummy.mrc" %tomo_name.replace('_dummy', '')
+        PARENT_PATH, "/home/ubuntu/Thesis/data/S2SDenoising/dummy_tomograms/%s_cryoCAREDummy.mrc" %_name
     )
     
 
@@ -159,11 +160,15 @@ print("Predicting full tomogram...")
 # make a new dataset with more samples
 if args['dataset'] in ['singleCET_FourierDataset', 'singleCET_dataset']:
     _dataset = eval(args['dataset'])
+    if args['dataset'] == 'singleCET_dataset':
+        n_bernoulli_samples = 20
+    else:
+        n_bernoulli_samples = 12
     my_dataset = _dataset(
                 cet_path,
                 subtomo_length=subtomo_length,
                 p=p,
-                n_bernoulli_samples=20,
+                n_bernoulli_samples=n_bernoulli_samples,
                 volumetric_scale_factor=volumetric_scale_factor,
                 Vmask_probability=Vmask_probability,
                 Vmask_pct=Vmask_pct,
