@@ -98,15 +98,24 @@ class denoisingTrainer:
             dataset_params = ['tomo_path', 'gt_tomo_path', 'subtomo_length',
              'vol_scale_factor', 'Vmask_probability', 'Vmask_pct']
 
+            try:
+                p = self.dataset.__dict__['p']
+            except KeyError:
+                p = None
+                
             extra_hparams = {
                 "transform": transform,
                 "Dataloader": type(self.dataset),
                 "Version_comment":comment,
-                "Dataloader.p": self.dataset.__dict__['p']
+                "Dataloader.p": p,
+                'Dataloader.batch_size':batch_size
             }
 
             for key in dataset_params:
-                extra_hparams[key] = self.dataset.__dict__[key]
+                try:
+                    extra_hparams[key] = self.dataset.__dict__[key]
+                except KeyError:
+                    extra_hparams[key] = None
 
             sdump = yaml.dump(extra_hparams)
 
@@ -147,3 +156,8 @@ def aggregate_bernoulliSamples2(batch):
         gt_subtomo = None
     
     return bernoulli_subtomo, target, gt_subtomo
+
+def collate_for_oneBernoulliSample(batch):
+    "Default pytorch collate_fn does not handle None. This ignores None values from the batch."
+    batch = [list(filter(lambda x: x is not None, b)) for b in batch]
+    return torch.utils.data.dataloader.default_collate(batch)
