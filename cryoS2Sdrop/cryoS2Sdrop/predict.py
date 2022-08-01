@@ -5,6 +5,7 @@ from torch.utils.data import DataLoader
 import yaml
 from tqdm import tqdm
 from glob import glob
+import numpy as np
 
 
 def aux_forward(model, subtomo):
@@ -34,45 +35,29 @@ def collate_fn(batch):
     batch = [list(filter(lambda x: x is not None, b)) for b in batch]
     return torch.utils.data.dataloader.default_collate(batch)
 
-def predict_full_tomogram(singleCET_dataset, model, batch_size):
+def predict_full_tomogram(singleCET_dataset, model, N=100):
 
     tomo_shape = singleCET_dataset.tomo_shape
     subtomo_length = singleCET_dataset.subtomo_length
 
-    # this returns a tensor of shape: [B, M, C, S, S, S]
-    dloader = DataLoader(
-        singleCET_dataset, batch_size=batch_size, shuffle=False, pin_memory=True, collate_fn=collate_fn
-    )
-
     denoised_tomo = torch.zeros(tomo_shape)
     count_tensor = torch.zeros(tomo_shape)  # for averaging overlapping patches
 
-    for idx, batch in enumerate(dloader):
-
-        subtomo = batch[0]  # shape: [B, M, C:=1, S, S, S]
-
-        # one prediction per subtomogram (batch member) averaging over bernoulli samples
-        denoised_subtomo = (
-            torch.stack([aux_forward(model, s) for s in subtomo])
-            .mean(1)
-            .squeeze(1)
-            .cpu()
-        )
-
-        # select grid indices
-        grid_min, grid_max = idx * batch_size, (idx + 1) * batch_size
-        grid_max = min(grid_max, len(singleCET_dataset))
-        for batch_idx, grid_idx in enumerate(range(grid_min, grid_max)):
-
-            z0, y0, x0 = singleCET_dataset.grid[grid_idx]
-            zmin, zmax = z0 - subtomo_length // 2, z0 + subtomo_length // 2
-            ymin, ymax = y0 - subtomo_length // 2, y0 + subtomo_length // 2
-            xmin, xmax = x0 - subtomo_length // 2, x0 + subtomo_length // 2
-
-            count_tensor[zmin:zmax, ymin:ymax, xmin:xmax] += 1
-            denoised_tomo[zmin:zmax, ymin:ymax, xmin:xmax] += denoised_subtomo[
-                batch_idx
-            ]
+    for idx, p0 in enumerate(tqdm(singleCET_dataset.grid)):
+        zmin, ymin, xmin = np.array(p0)-subtomo_length//2
+        zmax, ymax, xmax = np.array(p0)+subtomo_length//2
+        subtomo = singleCET_dataset[idx][0]  # shape: [M, C:=1, S, S, S] or  [C:=1, S, S, S]
+        if len(subtomo.shape)==4: # the projected dataset yields this type
+            subtomo = subtomo.unsqueeze(0) # equivalent to having "1 Bernoulli sample"
+        # we want to average each patch over N Bernoulli samples, typically N >> M
+        M = len(subtomo)
+        # effective number of samples
+        n_times = N//M + 1
+        pred = torch.cat([model(subtomo).detach().cpu() for i in range(n_times)])
+        # take mean over predictions and reduce channels
+        pred = pred.mean(0).squeeze()
+        denoised_tomo[zmin:zmax, ymin:ymax, xmin:xmax] += pred
+        count_tensor[zmin:zmax, ymin:ymax, xmin:xmax] += 1
 
     # Get average predictions for overlapping patches
     denoised_tomo = denoised_tomo / count_tensor

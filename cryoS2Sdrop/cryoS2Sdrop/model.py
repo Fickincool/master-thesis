@@ -181,12 +181,24 @@ class Denoising_3DUNet(pl.LightningModule):
 
         if gt_subtomo is not None:
             bernoulliBatch_subtomo = self.batch2bernoulliBatch(bernoulli_subtomo)
+            bernoulliBatch_pred = self.batch2bernoulliBatch(pred)
             bernoulliBatch_gt_subtomo = self.batch2bernoulliBatch(gt_subtomo)
-            monitor_ssim = self.ssim_monitoring(bernoulliBatch_subtomo, bernoulliBatch_gt_subtomo)
-            monitor_psnr = self.psnr_monitoring(bernoulliBatch_subtomo, bernoulliBatch_gt_subtomo)
+            baseline_ssim = self.ssim_monitoring(bernoulliBatch_subtomo, bernoulliBatch_gt_subtomo)
+            baseline_psnr = self.psnr_monitoring(bernoulliBatch_subtomo, bernoulliBatch_gt_subtomo)
+            monitor_ssim = self.ssim_monitoring(bernoulliBatch_pred, bernoulliBatch_gt_subtomo)
+            monitor_psnr = self.psnr_monitoring(bernoulliBatch_pred, bernoulliBatch_gt_subtomo)
 
             self.log(
-                "hp/ssim",
+                "ssim/baseline",
+                baseline_ssim,
+                on_step=False,
+                on_epoch=True,
+                prog_bar=False,
+                sync_dist=True,
+            )
+
+            self.log(
+                "ssim/predicted",
                 monitor_ssim,
                 on_step=False,
                 on_epoch=True,
@@ -195,7 +207,16 @@ class Denoising_3DUNet(pl.LightningModule):
             )
 
             self.log(
-                "hp/psnr",
+                "psnr/baseline",
+                baseline_psnr,
+                on_step=False,
+                on_epoch=True,
+                prog_bar=False,
+                sync_dist=True,
+            )
+
+            self.log(
+                "psnr/predicted",
                 monitor_psnr,
                 on_step=False,
                 on_epoch=True,
@@ -253,12 +274,24 @@ class Denoising_3DUNet_v2(Denoising_3DUNet):
 
         if gt_subtomo is not None:
             bernoulliBatch_subtomo = self.batch2bernoulliBatch(bernoulli_subtomo)
+            bernoulliBatch_pred = self.batch2bernoulliBatch(pred)
             bernoulliBatch_gt_subtomo = self.batch2bernoulliBatch(gt_subtomo)
-            monitor_ssim = self.ssim_monitoring(bernoulliBatch_subtomo, bernoulliBatch_gt_subtomo)
-            monitor_psnr = self.psnr_monitoring(bernoulliBatch_subtomo, bernoulliBatch_gt_subtomo)
+            baseline_ssim = self.ssim_monitoring(bernoulliBatch_subtomo, bernoulliBatch_gt_subtomo)
+            baseline_psnr = self.psnr_monitoring(bernoulliBatch_subtomo, bernoulliBatch_gt_subtomo)
+            monitor_ssim = self.ssim_monitoring(bernoulliBatch_pred, bernoulliBatch_gt_subtomo)
+            monitor_psnr = self.psnr_monitoring(bernoulliBatch_pred, bernoulliBatch_gt_subtomo)
 
             self.log(
-                "hp/ssim",
+                "ssim/baseline",
+                baseline_ssim,
+                on_step=False,
+                on_epoch=True,
+                prog_bar=False,
+                sync_dist=True,
+            )
+
+            self.log(
+                "ssim/predicted",
                 monitor_ssim,
                 on_step=False,
                 on_epoch=True,
@@ -267,7 +300,16 @@ class Denoising_3DUNet_v2(Denoising_3DUNet):
             )
 
             self.log(
-                "hp/psnr",
+                "psnr/baseline",
+                baseline_psnr,
+                on_step=False,
+                on_epoch=True,
+                prog_bar=False,
+                sync_dist=True,
+            )
+
+            self.log(
+                "psnr/predicted",
                 monitor_psnr,
                 on_step=False,
                 on_epoch=True,
@@ -287,7 +329,7 @@ class Denoising_3DUNet_v2(Denoising_3DUNet):
 
 class Denoising_2DUNet(pl.LightningModule):
     def __init__(self, loss_fn, lr, n_features, p, n_bernoulli_samples):
-        """Expected input: [B, C, S, S, S] where B the batch size, C input channels and S the subtomo length.
+        """Expected input: [B, C, S, S] where B the batch size, C input channels and S the subtomo length.
         The data values are expected to be standardized and [0, 1] scaled.
         """
 

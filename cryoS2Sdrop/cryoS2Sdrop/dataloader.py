@@ -1,8 +1,9 @@
-from multiprocessing.sharedctypes import Value
 import torch
 import numpy as np
 from torch.utils.data import Dataset
 from tomoSegmentPipeline.utils.common import read_array
+import tomopy.sim.project as proj
+from tomopy.recon.algorithm import recon
 
 
 class singleCET_dataset(Dataset):
@@ -16,6 +17,7 @@ class singleCET_dataset(Dataset):
         Vmask_probability=0,
         Vmask_pct=0.1,
         transform=None,
+        n_shift=0,
         gt_tomo_path=None
     ):
         """
@@ -42,6 +44,7 @@ class singleCET_dataset(Dataset):
         else:
             self.gt_data = None
         
+        self.n_shift = n_shift
         self.tomo_shape = self.data.shape
         self.subtomo_length = subtomo_length
         self.grid = self.create_grid()
@@ -119,7 +122,7 @@ class singleCET_dataset(Dataset):
         return bernoulli_mask
 
     def __getitem__(self, index: int):
-        center_z, center_y, center_x = self.grid[index]
+        center_z, center_y, center_x = self.shift_coords(*self.grid[index])
         z_min, z_max = (
             center_z - self.subtomo_length // 2,
             center_z + self.subtomo_length // 2,
@@ -148,13 +151,7 @@ class singleCET_dataset(Dataset):
             [self.create_bernoulliMask() for i in range(self.n_bernoulli_samples)],
             axis=0,
         )
-        ##### Take samples from a pool of predefined bernoulli masks
-        # bernoulli_mask_sample_idx = np.random.choice(
-        #     range(len(self.bernoulli_mask_samples)),
-        #     self.n_bernoulli_samples,
-        #     replace=False,
-        # )
-        # bernoulli_mask = self.bernoulli_mask_samples[bernoulli_mask_sample_idx]
+
         if gt_subtomo is not None:
             gt_subtomo = gt_subtomo.unsqueeze(0).repeat(
                 self.n_bernoulli_samples, 1, 1, 1, 1
@@ -167,6 +164,21 @@ class singleCET_dataset(Dataset):
         target = (1 - bernoulli_mask) * _samples  # complement of the bernoulli sample
 
         return bernoulli_subtomo, target, bernoulli_mask, gt_subtomo
+
+    def shift_coords(self, z, y, x):
+        "Add random shift to coordinates"
+        new_coords = []
+        for idx, coord in enumerate([z, y, x]):
+            shift_range = range(-self.n_shift, self.n_shift + 1)
+            coord = coord + np.random.choice(shift_range)
+            # Shift position if too close to border:
+            if coord < self.subtomo_length//2:
+                coord = self.subtomo_length//2
+            if coord > self.tomo_shape[idx] - self.subtomo_length//2:
+                coord = self.tomo_shape[idx] - self.subtomo_length//2
+            new_coords.append(coord)
+
+        return tuple(new_coords)
 
     def create_grid(self):
         """Create a possibly overlapping set of patches forming a grid that covers a tomogram"""
@@ -209,6 +221,7 @@ class singleCET_FourierDataset(singleCET_dataset):
         Vmask_probability=0,
         Vmask_pct=0.1,
         transform=None,
+        n_shift=0,
         gt_tomo_path=None
     ):
         """
@@ -225,7 +238,7 @@ class singleCET_FourierDataset(singleCET_dataset):
         """
         singleCET_dataset.__init__(
             self, tomo_path, subtomo_length, p, n_bernoulli_samples, volumetric_scale_factor, 
-            Vmask_probability, Vmask_pct, transform, gt_tomo_path)
+            Vmask_probability, Vmask_pct, transform, n_shift, gt_tomo_path)
             
         self.dataF = torch.fft.rfftn(self.data)
         self.tomoF_shape = self.dataF.shape
@@ -295,7 +308,7 @@ class singleCET_FourierDataset(singleCET_dataset):
         return samples
 
     def __getitem__(self, index: int):
-        center_z, center_y, center_x = self.grid[index]
+        center_z, center_y, center_x = self.shift_coords(*self.grid[index])
         z_min, z_max = (
             center_z - self.subtomo_length // 2,
             center_z + self.subtomo_length // 2,
@@ -331,6 +344,174 @@ class singleCET_FourierDataset(singleCET_dataset):
             subtomo, target, gt_subtomo = self.transform(subtomo, target, gt_subtomo)
             
         return subtomo, target, gt_subtomo
+
+
+class singleCET_ProjectedDataset(Dataset):
+    def __init__(
+        self,
+        tomo_path,
+        subtomo_length,
+        transform=None,
+        n_shift=0,
+        gt_tomo_path=None
+    ):
+        """
+        Load cryoET dataset and simulate 2 independent projections for N2N denoising.
+
+        The dataset consists of subtomograms of shape [C, S, S, S] C (equal to 1) is the number of channels and 
+        S is the subtomogram side length.
+
+        - tomo_path: tomogram path
+        - subtomo_length: side length of the patches to be used for training
+        - p: probability of an element to be zeroed
+        - volumetric_scale_factor: times the original tomogram shape will be reduced 
+        to take bernoulli point samples before upsampling into volumetric bernoulli blind spots.
+        """
+        self.tomo_path = tomo_path
+        self.data = torch.tensor(read_array(tomo_path))
+        self.data = self.clip(self.data)
+        self.data = self.standardize(self.data)
+        self.gt_tomo_path = gt_tomo_path
+        if gt_tomo_path is not None:
+            self.gt_data = torch.tensor(read_array(gt_tomo_path))
+            self.gt_data = self.clip(self.gt_data)
+            self.gt_data = self.standardize(self.gt_data)
+        else:
+            self.gt_data = None
+        
+        self.tomo_shape = self.data.shape
+        self.subtomo_length = subtomo_length
+        self.n_shift = n_shift
+        self.grid = self.create_grid()
+        self.transform = transform
+        self.n_angles = 200
+        self.ang_step = np.pi/(self.n_angles)
+        self.shift = 0.05
+        self.angles0 = np.linspace(0, 2*np.pi, self.n_angles)
+        # shift the projection for the second reconstruction
+        self.angles1 = np.linspace(0+self.shift, 2*np.pi+self.shift, self.n_angles)
+        self.simRecon0 = self.standardize(self.make_simulated_reconstruction(self.angles0, 'fbp'))
+        # self.simRecon1 = self.standardize(self.make_simulated_reconstruction(self.angles1, 'fbp'))
+
+        self.run_init_asserts()
+
+        return
+
+    def run_init_asserts(self):
+        if self.subtomo_length % 32 != 0:
+            raise ValueError(
+                "Length of subtomograms must be a multiple of 32 to run the network."
+            )
+
+        return
+
+    def standardize(self, X: torch.tensor):
+        mean = X.mean()
+        std = X.std()
+
+        new_X = (X - mean) / std
+
+        return new_X
+
+    def clip(self, X, low=0.005, high=0.995):
+        # works with tensors =)
+        return np.clip(X, np.quantile(X, low), np.quantile(X, high))
+
+    def __len__(self):
+        return len(self.grid)
+
+
+    def shift_coords(self, z, y, x):
+        "Add random shift to coordinates"
+        new_coords = []
+        for idx, coord in enumerate([z, y, x]):
+            shift_range = range(-self.n_shift, self.n_shift + 1)
+            coord = coord + np.random.choice(shift_range)
+            # Shift position if too close to border:
+            if coord < self.subtomo_length//2:
+                coord = self.subtomo_length//2
+            if coord > self.tomo_shape[idx] - self.subtomo_length//2:
+                coord = self.tomo_shape[idx] - self.subtomo_length//2
+            new_coords.append(coord)
+
+        return tuple(new_coords)
+
+    def create_grid(self):
+        """Create a possibly overlapping set of patches forming a grid that covers a tomogram"""
+        dist_center = self.subtomo_length // 2  # size from center
+        centers = []
+        for i, coord in enumerate(self.tomo_shape):
+
+            n_centers = int(np.ceil(coord / self.subtomo_length))
+            _centers = np.linspace(
+                dist_center, coord - dist_center, n_centers, dtype=int
+            )
+
+            startpoints, endpoints = _centers - dist_center, _centers + dist_center
+            overlap_ratio = max(endpoints[:-1] - startpoints[1::]) / dist_center
+
+            centers.append(_centers)
+
+            if overlap_ratio < 0:
+                raise ValueError(
+                    "The tomogram is not fully covered in dimension %i." % i
+                )
+
+            # if overlap_ratio>0.5:
+            #     raise ValueError('There is more than 50%% overlap between patches in dimension %i.' %i)
+
+        zs, ys, xs = np.meshgrid(*centers, indexing="ij")
+        grid = list(zip(zs.flatten(), ys.flatten(), xs.flatten()))
+
+        return grid
+
+    def make_simulated_reconstruction(self, angles, algorithm):
+        projection = proj.project(self.data, angles)
+        reconstruction = recon(projection, angles, algorithm=algorithm)
+
+        _shape = np.array(reconstruction.shape)
+        s0 = (_shape-self.tomo_shape)//2
+        s1 = _shape-s0
+
+        reconstruction = reconstruction[s0[0]:s1[0], s0[1]:s1[1], s0[2]:s1[2]]
+
+        return reconstruction
+
+    def __getitem__(self, index: int):
+        center_z, center_y, center_x = self.shift_coords(*self.grid[index])
+
+        z_min, z_max = (
+            center_z - self.subtomo_length // 2,
+            center_z + self.subtomo_length // 2,
+        )
+        y_min, y_max = (
+            center_y - self.subtomo_length // 2,
+            center_y + self.subtomo_length // 2,
+        )
+        x_min, x_max = (
+            center_x - self.subtomo_length // 2,
+            center_x + self.subtomo_length // 2,
+        )
+
+        if self.gt_data is not None:
+            gt_subtomo = self.gt_data[z_min:z_max, y_min:y_max, x_min:x_max]
+            gt_subtomo = torch.tensor(gt_subtomo).unsqueeze(0)
+        else:
+            gt_subtomo = None
+
+        subtomo = self.simRecon0[z_min:z_max, y_min:y_max, x_min:x_max]
+        subtomo = torch.tensor(subtomo).unsqueeze(0)
+        target = self.data[z_min:z_max, y_min:y_max, x_min:x_max]
+        target = torch.tensor(target).unsqueeze(0)
+        
+        if self.transform is not None:
+            subtomo, target, gt_subtomo = self.transform(subtomo, target, gt_subtomo)
+            
+        return subtomo, target, gt_subtomo
+
+
+
+
 
 class randomRotation3D(object):
     def __init__(self, p):
@@ -392,6 +573,7 @@ class randomRotation3D_fourierSamples(object):
         Input are of shape [M, C, S, S, S]
         First flatten the arrays, then apply the rotations on the 4D arrays, then reshape to original shape.
         """
+    
         s, t = subtomo.flatten(start_dim=0, end_dim=1), target.flatten(start_dim=0, end_dim=1)
         if gt_subtomo is not None:
             g = gt_subtomo.flatten(start_dim=0, end_dim=1)
