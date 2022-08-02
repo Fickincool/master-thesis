@@ -2,16 +2,17 @@ import os
 import json
 
 
-experiment_name = 'rawTomo_denoising_comparison'
+experiment_name = 'denoising_comparison'
 aux_epochs = 3
 experiment_args = {
     # corresponding version of the model we want to use for prediction
-    'e0': {'version':'version_1', 'n_bernoulli_samples':16}
+    'e0': {'version':'version_0', 'n_bernoulli_samples':20},
+    'e1': {'version':'version_2', 'n_bernoulli_samples':None}
     }
 
 default_args = {
     "tomo_name":None,
-    "n_bernoulli_samples":30,
+    "n_bernoulli_samples":20,
     "version": None
     }
 
@@ -24,7 +25,7 @@ def main(experiment_name, args):
 if __name__ == "__main__":
 
     for exp in experiment_args:
-        tomo_name = 'tomo02_dummy'
+        tomo_name = 'tomo02_cryoCAREDummy_noisyPerlin'
         args = default_args.copy()
         args['tomo_name'] = tomo_name
         # the new args is the dictionary of the experiment arguments

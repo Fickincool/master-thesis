@@ -21,6 +21,11 @@ import pathlib
 
 PARENT_PATH = setup.PARENT_PATH
 
+def parse_null_arg(arg, dtype):
+    try:
+        return dtype(arg)
+    except ValueError:
+        return None
 ###################### Parse arguments ###################
 
 args=json.loads(sys.argv[1])
@@ -51,9 +56,9 @@ gt_cet_path = hparams['gt_tomo_path']
 p = float(hparams['p']) # dropout (zeroing) probability
 subtomo_length = int(hparams['subtomo_length'])
 n_features = int(hparams['n_features'])
-volumetric_scale_factor = float(hparams['vol_scale_factor'])
-Vmask_probability = float(hparams['Vmask_probability'])
-Vmask_pct = float(hparams['Vmask_pct'])
+volumetric_scale_factor = parse_null_arg(hparams['vol_scale_factor'], float)
+Vmask_probability = parse_null_arg(hparams['Vmask_probability'], float)
+Vmask_pct = parse_null_arg(hparams['Vmask_pct'], float)
 alpha = hparams['loss_fn']['alpha']
 
 if dataset in ['singleCET_FourierDataset', 'singleCET_dataset']:
@@ -143,16 +148,25 @@ else:
         "baseline_psnr": None,
     }
 
-sdump = yaml.dump(extra_hparams)
-hparams_file = os.path.join(tensorboard_logdir, version)
-hparams_file = os.path.join(hparams_file, "hparams.yaml")
-with open(hparams_file, "a") as fo:
-    fo.write(sdump)
+if "full_tomo_ssim" not in hparams.keys(): 
+    sdump = yaml.dump(extra_hparams)
+    hparams_file = os.path.join(tensorboard_logdir, version)
+    hparams_file = os.path.join(hparams_file, "hparams.yaml")
+    with open(hparams_file, "a") as fo:
+        fo.write(sdump)
+else:
+    for k in ["full_tomo_ssim", "full_tomo_psnr", "baseline_ssim", "baseline_psnr"]:
+        hparams[k] = extra_hparams[k]
+
+    sdump = yaml.dump(hparams)
+    hparams_file = os.path.join(tensorboard_logdir, version)
+    hparams_file = os.path.join(hparams_file, "hparams.yaml")
+    with open(hparams_file, "w") as fo:
+        fo.write(sdump)
 
 filename = cet_path.split("/")[-1].replace(".mrc", "_s2sDenoised")
-v = version.replace("version_", "v")
 filename = os.path.join(
-    PARENT_PATH, "data/S2SDenoising/denoised/%s_%s.mrc" % (filename, v)
+    logdir, "%s.mrc" % (filename)
 )
 
 write_array(denoised_tomo.numpy(), filename)
