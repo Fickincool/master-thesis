@@ -244,9 +244,8 @@ with open(hparams_file, "a") as fo:
     fo.write(sdump)
 
 filename = cet_path.split("/")[-1].replace(".mrc", "_s2sDenoised")
-v = version.replace("version_", "v")
 filename = os.path.join(
-    PARENT_PATH, "data/S2SDenoising/denoised/%s_%s.mrc" % (filename, v)
+    logdir, "%s.mrc" % (filename)
 )
 
 write_array(denoised_tomo.numpy(), filename)

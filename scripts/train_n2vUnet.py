@@ -21,7 +21,7 @@ PARENT_PATH = setup.PARENT_PATH
 
 # cet_path = os.path.join(PARENT_PATH, 'data/raw_cryo-ET/tomo02.mrc')
 # cet_path = os.path.join(PARENT_PATH, 'data/S2SDenoising/dummy_tomograms/tomo04_deconvDummy.mrc')
-tomo_name = 'tomo02_dummy'
+tomo_name = 'tomo02_cryoCAREDummy_noisyPerlin'
 cet_path = os.path.join(
     PARENT_PATH, "data/S2SDenoising/dummy_tomograms/%s.mrc" %tomo_name
 )
