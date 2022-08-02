@@ -151,7 +151,7 @@ logdir = os.path.join(tensorboard_logdir, "%s/" % version)
 with open(os.path.join(logdir, 'experiment_args.json'), 'w') as f:
     json.dump(args, f)
 
-model, hparams = load_model(logdir, model, DataParallel=True)
+model, hparams = load_model(logdir, DataParallel=True)
 my_dataset.transform = None
 my_dataset.n_shift = 0
 
