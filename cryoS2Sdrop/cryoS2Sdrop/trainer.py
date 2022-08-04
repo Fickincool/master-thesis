@@ -96,7 +96,8 @@ class denoisingTrainer:
             hparams_file = os.path.join(hparams_file, "hparams.yaml")
 
             dataset_params = ['tomo_path', 'gt_tomo_path', 'subtomo_length',
-             'vol_scale_factor', 'Vmask_probability', 'Vmask_pct']
+             'vol_scale_factor', 'Vmask_probability', 'Vmask_pct', 'use_deconv_data',
+             'use_deconv_as_target']
 
             try:
                 p = self.dataset.__dict__['p']

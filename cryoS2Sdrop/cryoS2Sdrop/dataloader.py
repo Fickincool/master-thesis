@@ -4,6 +4,7 @@ from torch.utils.data import Dataset
 from tomoSegmentPipeline.utils.common import read_array
 import tomopy.sim.project as proj
 from tomopy.recon.algorithm import recon
+from .deconvolution import tom_deconv_tomo
 
 
 class singleCET_dataset(Dataset):
@@ -18,7 +19,8 @@ class singleCET_dataset(Dataset):
         Vmask_pct=0.1,
         transform=None,
         n_shift=0,
-        gt_tomo_path=None
+        gt_tomo_path=None,
+        **deconv_kwargs
     ):
         """
         Load cryoET dataset for self2self denoising.
@@ -33,9 +35,19 @@ class singleCET_dataset(Dataset):
         to take bernoulli point samples before upsampling into volumetric bernoulli blind spots.
         """
         self.tomo_path = tomo_path
+
         self.data = torch.tensor(read_array(tomo_path))
         self.data = self.clip(self.data)
         self.data = self.standardize(self.data)
+
+        self.deconv_kwargs = {"vol":self.data.numpy(), **deconv_kwargs}
+        self.use_deconv_data = self.check_deconv_kwargs(deconv_kwargs)
+        if self.use_deconv_data:
+            self.data = tom_deconv_tomo(**self.deconv_kwargs)
+            self.data = torch.tensor(self.data)
+        else:
+            pass
+        
         self.gt_tomo_path = gt_tomo_path
         if gt_tomo_path is not None:
             self.gt_data = torch.tensor(read_array(gt_tomo_path))
@@ -63,6 +75,22 @@ class singleCET_dataset(Dataset):
         self.run_init_asserts()
 
         return
+
+    def check_deconv_kwargs(self, deconv_kwargs):
+        if bool(deconv_kwargs):
+            deconv_args = ["angpix", "defocus", "snrfalloff", "deconvstrength", "highpassnyquist"]
+            for arg in deconv_args:
+                if arg in self.deconv_kwargs.keys():
+                    continue
+                else:
+                    raise KeyError('Missing required deconvolution argument: "%s"' %arg)
+            use_deconv_data = True
+            print('Using deconvolved data for training.')
+
+        else:
+            use_deconv_data = False
+        
+        return use_deconv_data
 
     def run_init_asserts(self):
         if self.subtomo_length % self.vol_scale_factor != 0:
@@ -222,7 +250,8 @@ class singleCET_FourierDataset(singleCET_dataset):
         Vmask_pct=0.1,
         transform=None,
         n_shift=0,
-        gt_tomo_path=None
+        gt_tomo_path=None,
+        **deconv_kwargs
     ):
         """
         Load cryoET dataset with samples taken by Bernoulli sampling Fourier space for self2self denoising.
@@ -238,7 +267,7 @@ class singleCET_FourierDataset(singleCET_dataset):
         """
         singleCET_dataset.__init__(
             self, tomo_path, subtomo_length, p, n_bernoulli_samples, volumetric_scale_factor, 
-            Vmask_probability, Vmask_pct, transform, n_shift, gt_tomo_path)
+            Vmask_probability, Vmask_pct, transform, n_shift, gt_tomo_path, **deconv_kwargs)
             
         self.dataF = torch.fft.rfftn(self.data)
         self.tomoF_shape = self.dataF.shape
@@ -353,10 +382,13 @@ class singleCET_ProjectedDataset(Dataset):
         subtomo_length,
         transform=None,
         n_shift=0,
-        gt_tomo_path=None
+        gt_tomo_path=None,
+        predict_simRecon=False,
+        use_deconv_as_target=False,
+        **deconv_kwargs
     ):
         """
-        Load cryoET dataset and simulate 2 independent projections for N2N denoising.
+        Load cryoET dataset and simulate 2 independent projections for N2N denoising. All data is deconvolved.
 
         The dataset consists of subtomograms of shape [C, S, S, S] C (equal to 1) is the number of channels and 
         S is the subtomogram side length.
@@ -371,6 +403,9 @@ class singleCET_ProjectedDataset(Dataset):
         self.data = torch.tensor(read_array(tomo_path))
         self.data = self.clip(self.data)
         self.data = self.standardize(self.data)
+
+        self.use_deconv_data = self.check_deconv_kwargs(deconv_kwargs)
+
         self.gt_tomo_path = gt_tomo_path
         if gt_tomo_path is not None:
             self.gt_data = torch.tensor(read_array(gt_tomo_path))
@@ -384,18 +419,59 @@ class singleCET_ProjectedDataset(Dataset):
         self.n_shift = n_shift
         self.grid = self.create_grid()
         self.transform = transform
-        self.n_angles = 200
-        self.ang_step = np.pi/(self.n_angles)
-        self.shift = 0.05
+        self.n_angles = 300
+        self.shift = np.pi/np.sqrt(2) # shift by some amount that guarantees no overlap
         self.angles0 = np.linspace(0, 2*np.pi, self.n_angles)
         # shift the projection for the second reconstruction
         self.angles1 = np.linspace(0+self.shift, 2*np.pi+self.shift, self.n_angles)
-        self.simRecon0 = self.standardize(self.make_simulated_reconstruction(self.angles0, 'fbp'))
-        # self.simRecon1 = self.standardize(self.make_simulated_reconstruction(self.angles1, 'fbp'))
+
+        self.simRecon0 = self.make_simulated_reconstruction(self.angles0, 'fbp')
+        self.simRecon0 = self.standardize(self.clip(self.simRecon0))
+        self.deconv_kwargs0 = {"vol":self.simRecon0, **deconv_kwargs}
+        self.simRecon0 = tom_deconv_tomo(**self.deconv_kwargs0)
+        self.simRecon0 = torch.tensor(self.simRecon0)
+
+        self.predict_simRecon = predict_simRecon
+        if predict_simRecon:
+            self.simRecon1 = self.make_simulated_reconstruction(self.angles1, 'fbp')
+            self.simRecon1 = self.standardize(self.clip(self.simRecon1))
+            # I map deconvolved to raw reconstruction because my idea is that this
+            # prevents too much coupling of the noise somehow (??)
+            if use_deconv_as_target:
+                print('Using simRecon0 and deconvolved simRecon1 for training')
+                self.deconv_kwargs1 = {"vol":self.simRecon1, **deconv_kwargs}
+                self.simRecon1 = tom_deconv_tomo(**self.deconv_kwargs1)
+            else:
+                print('Using simRecon0 and simRecon1 for training')
+            self.simRecon1 = torch.tensor(self.simRecon1)
+
+        else:
+            if use_deconv_as_target:
+                print('Using simRecon0 and deconvolved data for training')
+                self.deconv_kwargs = {"vol":self.data.numpy(), **deconv_kwargs}
+                self.data = tom_deconv_tomo(**deconv_kwargs)
+                self.data = torch.tensor(self.data)
+            else:
+                print('Using simRecon0 and data for training')
 
         self.run_init_asserts()
 
         return
+
+    def check_deconv_kwargs(self, deconv_kwargs):
+        if bool(deconv_kwargs):
+            deconv_args = ["angpix", "defocus", "snrfalloff", "deconvstrength", "highpassnyquist"]
+            for arg in deconv_args:
+                if arg in deconv_kwargs.keys():
+                    continue
+                else:
+                    raise KeyError('Missing required deconvolution argument: "%s"' %arg)
+            use_deconv_data = True
+
+        else:
+            use_deconv_data = False
+        
+        return use_deconv_data
 
     def run_init_asserts(self):
         if self.subtomo_length % 32 != 0:
@@ -501,8 +577,12 @@ class singleCET_ProjectedDataset(Dataset):
 
         subtomo = self.simRecon0[z_min:z_max, y_min:y_max, x_min:x_max]
         subtomo = torch.tensor(subtomo).unsqueeze(0)
-        target = self.data[z_min:z_max, y_min:y_max, x_min:x_max]
-        target = torch.tensor(target).unsqueeze(0)
+        if self.predict_simRecon:
+            target = self.simRecon1[z_min:z_max, y_min:y_max, x_min:x_max]
+            target = torch.tensor(target).unsqueeze(0)
+        else:
+            target = self.data[z_min:z_max, y_min:y_max, x_min:x_max]
+            target = torch.tensor(target).unsqueeze(0)
         
         if self.transform is not None:
             subtomo, target, gt_subtomo = self.transform(subtomo, target, gt_subtomo)
