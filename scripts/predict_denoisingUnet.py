@@ -2,16 +2,9 @@ import os
 import yaml
 import matplotlib.pyplot as plt
 import numpy as np
-from tqdm import tqdm
-import torch
-from time import sleep
 from tomoSegmentPipeline.utils.common import write_array
 from tomoSegmentPipeline.utils import setup
 from cryoS2Sdrop.dataloader import singleCET_dataset, singleCET_FourierDataset, singleCET_ProjectedDataset
-from cryoS2Sdrop.trainer import denoisingTrainer, aggregate_bernoulliSamples, aggregate_bernoulliSamples2, collate_for_oneBernoulliSample
-from cryoS2Sdrop.dataloader import randomRotation3D, randomRotation3D_fourierSamples
-from cryoS2Sdrop.losses import self2self_L2Loss, self2selfLoss, self2selfLoss_noMask
-from cryoS2Sdrop.model import Denoising_3DUNet, Denoising_3DUNet_v2
 from cryoS2Sdrop.predict import load_model, predict_full_tomogram
 from pytorch_msssim import ssim
 from torchmetrics.functional import peak_signal_noise_ratio
@@ -44,8 +37,12 @@ pathlib.Path(tensorboard_logdir).mkdir(parents=True, exist_ok=True)
 
 logdir = os.path.join(tensorboard_logdir, "%s/" % version)
 
-with open(os.path.join(logdir, 'experiment_args.json'), 'w') as f:
-    json.dump(args, f)
+with open(os.path.join(logdir, 'experiment_args.json'), 'r') as f:
+    exp_args = json.load(f)
+
+deconv_kwargs = exp_args['deconv_kwargs']
+predict_simRecon = exp_args['predict_simRecon']
+use_deconv_as_target = exp_args['use_deconv_as_target']
 
 model, hparams = load_model(logdir, DataParallel=True)
 
@@ -72,8 +69,9 @@ if dataset in ['singleCET_FourierDataset', 'singleCET_dataset']:
                 Vmask_probability=Vmask_probability,
                 Vmask_pct=Vmask_pct,
                 transform=None,
-                n_shift=0, 
-                gt_tomo_path=gt_cet_path
+                n_shift=0,
+                gt_tomo_path=gt_cet_path,
+                **deconv_kwargs
             )
 elif dataset in ['singleCET_ProjectedDataset']:
     my_dataset = singleCET_ProjectedDataset(
@@ -81,7 +79,10 @@ elif dataset in ['singleCET_ProjectedDataset']:
                 subtomo_length=subtomo_length,
                 transform=None,
                 n_shift=0, 
-                gt_tomo_path=gt_cet_path
+                gt_tomo_path=gt_cet_path,
+                predict_simRecon=predict_simRecon,
+                use_deconv_as_target=use_deconv_as_target,
+                **deconv_kwargs
     )
 
 ################### Make prediction plots ########################

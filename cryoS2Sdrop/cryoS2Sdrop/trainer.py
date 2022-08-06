@@ -97,7 +97,7 @@ class denoisingTrainer:
 
             dataset_params = ['tomo_path', 'gt_tomo_path', 'subtomo_length',
              'vol_scale_factor', 'Vmask_probability', 'Vmask_pct', 'use_deconv_data',
-             'use_deconv_as_target']
+             'use_deconv_as_target', 'predict_simRecon']
 
             try:
                 p = self.dataset.__dict__['p']

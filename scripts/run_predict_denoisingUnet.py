@@ -2,14 +2,12 @@ import os
 import json
 
 
-experiment_name = 'rawTomo_denoising_comparison'
-aux_epochs = 3
+experiment_name = 'normal_vs_deconvolved_comparison'
+
 experiment_args = {
     # corresponding version of the model we want to use for prediction
-    # 'e0': {'version':'version_0', 'n_bernoulli_samples':20},
-    # 'e1': {'version':'version_1', 'n_bernoulli_samples':12},
-    # 'e2': {'version':'version_2', 'n_bernoulli_samples':None},
-    'e3': {'version':'version_3', 'n_bernoulli_samples':None}
+    'e0': {'version':'version_2', 'n_bernoulli_samples':12},
+    'e1': {'version':'version_3', 'n_bernoulli_samples':12}
     }
 
 default_args = {

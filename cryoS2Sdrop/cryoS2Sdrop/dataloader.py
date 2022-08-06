@@ -449,10 +449,12 @@ class singleCET_ProjectedDataset(Dataset):
             if use_deconv_as_target:
                 print('Using simRecon0 and deconvolved data for training')
                 self.deconv_kwargs = {"vol":self.data.numpy(), **deconv_kwargs}
-                self.data = tom_deconv_tomo(**deconv_kwargs)
+                self.data = tom_deconv_tomo(**self.deconv_kwargs)
                 self.data = torch.tensor(self.data)
             else:
                 print('Using simRecon0 and data for training')
+
+        self.use_deconv_as_target = use_deconv_as_target
 
         self.run_init_asserts()
 
