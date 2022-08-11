@@ -13,40 +13,38 @@ deconv_kwargs = {
 
 max_epochs = 400
 experiment_args = {
-    # 'e0': {'dataset':'singleCET_dataset','deconv_kwargs':deconv_kwargs, 'epochs':max_epochs, 'comment':"Deconvolved bernoulli"},
-    # 'e1': {'dataset':'singleCET_dataset', 'epochs':max_epochs, 'comment':"Bernoull"},
+    'e0': {'dataset':'singleCET_dataset','deconv_kwargs':deconv_kwargs, 'epochs':max_epochs, 'comment':"Deconvolved bernoulli"},
+    'e1': {'dataset':'singleCET_dataset', 'epochs':max_epochs, 'comment':"Bernoull"},
 
-    # 'e2': {'dataset':'singleCET_FourierDataset','deconv_kwargs':deconv_kwargs, 'epochs':max_epochs, 'comment': 'Deconvolved Fourier'},
-    # 'e3': {'dataset':'singleCET_FourierDataset', 'epochs':max_epochs, 'comment': 'Fourier'},
+    'e2': {'dataset':'singleCET_FourierDataset','deconv_kwargs':deconv_kwargs, 'epochs':max_epochs, 'comment': 'Deconvolved Fourier'},
+    'e3': {'dataset':'singleCET_FourierDataset', 'epochs':max_epochs, 'comment': 'Fourier'},
     
-    # 'e4': {
-    #     'dataset':'singleCET_ProjectedDataset', 'deconv_kwargs':deconv_kwargs, 'epochs':2.3*max_epochs,
-    #     'batch_size':6, 'use_deconv_as_target': True, 'predict_simRecon': True,
-    #     'comment':"Sim N2N denoising using deconv reconstruction as target."
-    #     },
-    # 'e5': {
-    #     'dataset':'singleCET_ProjectedDataset', 'deconv_kwargs':deconv_kwargs, 'epochs':2.3*max_epochs,
-    #     'batch_size':6, 'use_deconv_as_target': False, 'predict_simRecon': True,
-    #     'comment':"Sim N2N denoising using reconstruction as target."
-    #     },
+    'e4': {
+        'dataset':'singleCET_ProjectedDataset', 'deconv_kwargs':deconv_kwargs, 'epochs':2.3*max_epochs,
+        'batch_size':6, 'use_deconv_as_target': True, 'predict_simRecon': True,
+        'comment':"Sim N2N denoising using deconv reconstruction as target."
+        },
+    'e5': {
+        'dataset':'singleCET_ProjectedDataset', 'deconv_kwargs':deconv_kwargs, 'epochs':2.3*max_epochs,
+        'batch_size':6, 'use_deconv_as_target': False, 'predict_simRecon': True,
+        'comment':"Sim N2N denoising using reconstruction as target."
+        },
 
-    # 'e6': {
-    #     'dataset':'singleCET_ProjectedDataset', 'deconv_kwargs':deconv_kwargs, 'epochs':2.3*max_epochs,
-    #     'batch_size':6, 'use_deconv_as_target': True, 'predict_simRecon': False,
-    #     'comment':"Sim N2N denoising using deconv data as target."
-    #     },
-    # 'e7': {
-    #     'dataset':'singleCET_ProjectedDataset', 'deconv_kwargs':deconv_kwargs, 'epochs':2.3*max_epochs,
-    #     'batch_size':6, 'use_deconv_as_target': False, 'predict_simRecon': False,
-    #     'comment':"Sim N2N denoising using raw data as target."
-    #     },
+    'e6': {
+        'dataset':'singleCET_ProjectedDataset', 'deconv_kwargs':deconv_kwargs, 'epochs':2.3*max_epochs,
+        'batch_size':6, 'use_deconv_as_target': True, 'predict_simRecon': False,
+        'comment':"Sim N2N denoising using deconv data as target."
+        },
+    'e7': {
+        'dataset':'singleCET_ProjectedDataset', 'deconv_kwargs':deconv_kwargs, 'epochs':2.3*max_epochs,
+        'batch_size':6, 'use_deconv_as_target': False, 'predict_simRecon': False,
+        'comment':"Sim N2N denoising using raw data as target."
+        },
     'e8': {
         'dataset':'singleCET_ProjectedDataset', 'deconv_kwargs':deconv_kwargs, 'epochs':2.3*max_epochs,
         'batch_size':6, 'use_deconv_as_target': True, 'predict_simRecon': False,
         'comment':"Sim N2N denoising using deconvolved data as target."
         },
-
-        
     }
 
 experiment_logdir = '/home/ubuntu/Thesis/data/S2SDenoising/experiment_args'
@@ -84,7 +82,7 @@ if __name__ == "__main__":
         json.dump(experiment_args, f)
 
     for exp in experiment_args:
-        tomo_name = 'tomo02_dummy'
+        tomo_name = 'tomoPhantom_model14_noisyGaussPoiss'
         args = default_args.copy()
         args['tomo_name'] = tomo_name
         # the new args is the dictionary of the experiment arguments

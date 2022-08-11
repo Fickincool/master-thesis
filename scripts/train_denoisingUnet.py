@@ -46,18 +46,15 @@ tomo_name = args['tomo_name']
 
 deconv_kwargs = args['deconv_kwargs']
 
-if tomo_name.startswith('model'):
-    if tomo_name in ['model14', 'model16']:
-        cet_path = os.path.join(
-            PARENT_PATH, "data/S2SDenoising/dummy_tomograms/tomoPhantom_%s_Poisson5000+Gauss5+stripes.mrc" %tomo_name
-        )
-    elif tomo_name == 'model9':
-        cet_path = os.path.join(
-            PARENT_PATH, "data/S2SDenoising/dummy_tomograms/tomoPhantom_%s_Poisson5000+Gauss5.mrc" %tomo_name
-        )
+if tomo_name.startswith('tomoPhantom'):
+
+    cet_path = os.path.join(
+        PARENT_PATH, "data/S2SDenoising/dummy_tomograms/%s.mrc" %tomo_name
+    )
+    model_name = tomo_name.split('_')[1]
 
     gt_cet_path = os.path.join(
-        PARENT_PATH, "data/S2SDenoising/dummy_tomograms/tomoPhantom_%s.mrc" %tomo_name
+        PARENT_PATH, "data/S2SDenoising/dummy_tomograms/tomoPhantom_%s.mrc" %model_name
     )
 
 elif tomo_name.startswith('tomo'):
@@ -66,7 +63,7 @@ elif tomo_name.startswith('tomo'):
     )
     _name = tomo_name.split('_')[0]
     gt_cet_path = os.path.join(
-        PARENT_PATH, "/home/ubuntu/Thesis/data/S2SDenoising/dummy_tomograms/%s_cryoCAREDummy.mrc" %_name
+        PARENT_PATH, "data/S2SDenoising/dummy_tomograms/%s_cryoCAREDummy.mrc" %_name
     )
     
 
