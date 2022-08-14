@@ -7,6 +7,7 @@ from n2v.internals.N2V_DataGenerator import N2V_DataGenerator
 from matplotlib import pyplot as plt
 from tomoSegmentPipeline.utils import setup
 from tomoSegmentPipeline.utils.common import read_array, write_array
+from cryoS2Sdrop.deconvolution import tom_deconv_tomo
 
 import urllib
 import os
@@ -21,33 +22,14 @@ PARENT_PATH = setup.PARENT_PATH
 
 # cet_path = os.path.join(PARENT_PATH, 'data/raw_cryo-ET/tomo02.mrc')
 # cet_path = os.path.join(PARENT_PATH, 'data/S2SDenoising/dummy_tomograms/tomo04_deconvDummy.mrc')
-tomo_name = 'tomo02_cryoCAREDummy_noisyGaussPoissPerlin'
+tomo_name = 'tomo02_cryoCAREDummy_noisyGaussPoiss'
 cet_path = os.path.join(
     PARENT_PATH, "data/S2SDenoising/dummy_tomograms/%s.mrc" %tomo_name
 )
 
 gt_cet_path = None
 
-# simulated_model = 'model16'
-# simulated_model = 'model14'
-# cet_path = os.path.join(
-#     PARENT_PATH, "data/S2SDenoising/dummy_tomograms/tomoPhantom_%s_Poisson5000+Gauss5+stripes.mrc" %simulated_model
-# )
-
-# simulated_model = 'model9'
-# cet_path = os.path.join(
-#     PARENT_PATH, "data/S2SDenoising/dummy_tomograms/tomoPhantom_%s_Poisson5000+Gauss5.mrc" %simulated_model
-# )
-
-# gt_cet_path = os.path.join(
-#     PARENT_PATH, "data/S2SDenoising/dummy_tomograms/tomoPhantom_%s.mrc" %simulated_model
-# )
-
-
-try:
-    name = simulated_model
-except:
-    name = tomo_name
+name = tomo_name
 
 ##################################### Generate patches ####################################################
 
@@ -59,6 +41,26 @@ datagen = N2V_DataGenerator()
 # The function will return a list of images (numpy arrays).
 # In the 'dims' parameter we specify the order of dimensions in the image files we are reading.
 imgs = datagen.load_imgs([cet_path], dims='ZYX')
+
+deconv_kwargs = {
+    'angpix': 14,
+    'defocus': 0,
+    'snrfalloff': 1,
+    'deconvstrength': 1,
+    'highpassnyquist': 0.3
+                 }
+
+deconv_kwargs['vol'] = imgs[0][0,...,0]
+
+if len(imgs)>1:
+    raise ValueError("Deconvolution not implemented for more than 1 training tomogram.")
+
+use_deconv_data = True
+
+if use_deconv_data: 
+    imgs[0][0,...,0] = tom_deconv_tomo(**deconv_kwargs)
+else:
+    pass
 
 # Let's look at the shape of the image
 print('Image shape: ', imgs[0].shape)
@@ -89,9 +91,14 @@ config = N2VConfig(X, unet_kern_size=3,
 
 
 # a name used to identify the model
-model_name = 'n2v_3D_%s' %name
-# the base directory in which our model will live
-basedir = '/home/ubuntu/Thesis/data/S2SDenoising/n2v_model_logs/%s/' %name
+if use_deconv_data:
+    model_name = 'n2v_3D_%s' %name
+    # the base directory in which our model will live
+    basedir = '/home/ubuntu/Thesis/data/S2SDenoising/n2v_model_logs/%s/deconv/' %name
+else:
+    model_name = 'n2v_3D_%s' %name
+    # the base directory in which our model will live
+    basedir = '/home/ubuntu/Thesis/data/S2SDenoising/n2v_model_logs/%s/normal/' %name
 # We are now creating our network model.
 model = N2V(config=config, name=model_name, basedir=basedir)
 
@@ -136,7 +143,10 @@ plt.tight_layout()
 outfile = os.path.join(basedir, "original_vs_N2Vdenoised.png")
 plt.savefig(outfile, dpi=200)
 
-filename = cet_path.split("/")[-1].replace(".mrc", "_n2vDenoised")
+if use_deconv_data:
+    filename = cet_path.split("/")[-1].replace(".mrc", "_deconv_n2vDenoised")
+else:
+    filename = cet_path.split("/")[-1].replace(".mrc", "_n2vDenoised")
 filename = os.path.join(
     PARENT_PATH, "data/S2SDenoising/denoised/%s.mrc" % (filename)
 )
