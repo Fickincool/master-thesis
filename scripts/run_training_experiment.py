@@ -2,7 +2,7 @@ import os
 import json
 
 
-experiment_name = 'normal_vs_deconvolved_comparison'
+experiment_name = 'fourierSampling_comparison'
 deconv_kwargs = {
     'angpix': 14,
     'defocus': 0,
@@ -13,38 +13,25 @@ deconv_kwargs = {
 
 max_epochs = 400
 experiment_args = {
-    'e0': {'dataset':'singleCET_dataset','deconv_kwargs':deconv_kwargs, 'epochs':max_epochs, 'comment':"Deconvolved bernoulli"},
-    'e1': {'dataset':'singleCET_dataset', 'epochs':max_epochs, 'comment':"Bernoull"},
 
-    'e2': {'dataset':'singleCET_FourierDataset','deconv_kwargs':deconv_kwargs, 'epochs':max_epochs, 'comment': 'Deconvolved Fourier'},
-    'e3': {'dataset':'singleCET_FourierDataset', 'epochs':max_epochs, 'comment': 'Fourier'},
-    
+    'e0': {
+        'dataset':'singleCET_FourierDataset','deconv_kwargs':deconv_kwargs, 'epochs':max_epochs, 'hiFreqMask_prob':1,
+        'comment': 'Deconvolved Fourier with hiFreqMask'
+        },
+    'e1': {'dataset':'singleCET_FourierDataset', 'epochs':max_epochs, 'hiFreqMask_prob':1, 'comment': 'Fourier with hiFreqMask'},
+
+    'e2': {
+        'dataset':'singleCET_FourierDataset','deconv_kwargs':deconv_kwargs, 'epochs':max_epochs, 'hiFreqMask_prob':0,
+        'comment': 'Deconvolved Fourier no hiFreqMask'
+        },
+    'e3': {'dataset':'singleCET_FourierDataset', 'epochs':max_epochs, 'hiFreqMask_prob':0, 'comment': 'Fourier no hiFreqMask (OG)'},
+
     'e4': {
-        'dataset':'singleCET_ProjectedDataset', 'deconv_kwargs':deconv_kwargs, 'epochs':2.3*max_epochs,
-        'batch_size':6, 'use_deconv_as_target': True, 'predict_simRecon': True,
-        'comment':"Sim N2N denoising using deconv reconstruction as target."
+        'dataset':'singleCET_FourierDataset','deconv_kwargs':deconv_kwargs, 'epochs':max_epochs, 'hiFreqMask_prob':0.5,
+        'comment': 'Deconvolved Fourier mix hiFreqMask with p=0.5'
         },
-    'e5': {
-        'dataset':'singleCET_ProjectedDataset', 'deconv_kwargs':deconv_kwargs, 'epochs':2.3*max_epochs,
-        'batch_size':6, 'use_deconv_as_target': False, 'predict_simRecon': True,
-        'comment':"Sim N2N denoising using reconstruction as target."
-        },
+    'e5': {'dataset':'singleCET_FourierDataset', 'epochs':max_epochs, 'hiFreqMask_prob':0.5, 'comment': 'Fourier mix hiFreqMask with p=0.5'},
 
-    'e6': {
-        'dataset':'singleCET_ProjectedDataset', 'deconv_kwargs':deconv_kwargs, 'epochs':2.3*max_epochs,
-        'batch_size':6, 'use_deconv_as_target': True, 'predict_simRecon': False,
-        'comment':"Sim N2N denoising using deconv data as target."
-        },
-    'e7': {
-        'dataset':'singleCET_ProjectedDataset', 'deconv_kwargs':deconv_kwargs, 'epochs':2.3*max_epochs,
-        'batch_size':6, 'use_deconv_as_target': False, 'predict_simRecon': False,
-        'comment':"Sim N2N denoising using raw data as target."
-        },
-    'e8': {
-        'dataset':'singleCET_ProjectedDataset', 'deconv_kwargs':deconv_kwargs, 'epochs':2.3*max_epochs,
-        'batch_size':6, 'use_deconv_as_target': True, 'predict_simRecon': False,
-        'comment':"Sim N2N denoising using deconvolved data as target."
-        },
     }
 
 experiment_logdir = '/home/ubuntu/Thesis/data/S2SDenoising/experiment_args'
@@ -67,7 +54,8 @@ default_args = {
     "predict_simRecon": None,
     "deconv_kwargs": {},
     "use_deconv_as_target": None,
-    "comment": None
+    "comment": None,
+    "hiFreqMask_prob":None
     }
 
 

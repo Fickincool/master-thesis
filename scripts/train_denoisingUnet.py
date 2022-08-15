@@ -42,6 +42,8 @@ num_gpus = args['num_gpus']
 predict_simRecon = args['predict_simRecon']
 use_deconv_as_target = args['use_deconv_as_target']
 
+hiFreqMask_prob = args['hiFreqMask_prob']
+
 tomo_name = args['tomo_name']
 
 deconv_kwargs = args['deconv_kwargs']
@@ -76,9 +78,8 @@ comment = args['comment']
 
 n_shift = 10
 
-if args['dataset'] in ['singleCET_FourierDataset', 'singleCET_dataset']:
-    _dataset = eval(args['dataset'])
-    my_dataset = _dataset(
+if args['dataset'] =='singleCET_dataset':
+    my_dataset = singleCET_dataset(
                 cet_path,
                 subtomo_length=subtomo_length,
                 p=p,
@@ -91,7 +92,24 @@ if args['dataset'] in ['singleCET_FourierDataset', 'singleCET_dataset']:
                 gt_tomo_path=gt_cet_path,
                 **deconv_kwargs
             )
-elif args['dataset'] in ['singleCET_ProjectedDataset']:
+
+elif args['dataset'] == 'singleCET_FourierDataset':
+    my_dataset = singleCET_FourierDataset(
+                cet_path,
+                subtomo_length=subtomo_length,
+                p=p,
+                n_bernoulli_samples=n_bernoulli_samples,
+                volumetric_scale_factor=volumetric_scale_factor,
+                Vmask_probability=Vmask_probability,
+                Vmask_pct=Vmask_pct,
+                transform=None,
+                n_shift=n_shift, 
+                gt_tomo_path=gt_cet_path,
+                hiFreqMask_prob=hiFreqMask_prob,
+                **deconv_kwargs
+            )
+
+elif args['dataset'] == 'singleCET_ProjectedDataset':
     my_dataset = singleCET_ProjectedDataset(
                 cet_path,
                 subtomo_length=subtomo_length,
@@ -163,13 +181,9 @@ my_dataset.n_shift = 0
 print("Predicting full tomogram...")
 
 # make a new dataset with more samples
-if args['dataset'] in ['singleCET_FourierDataset', 'singleCET_dataset']:
-    _dataset = eval(args['dataset'])
-    if args['dataset'] == 'singleCET_dataset':
+if args['dataset'] == 'singleCET_dataset':
         n_bernoulli_samples = 20
-    else:
-        n_bernoulli_samples = 12
-    my_dataset = _dataset(
+        my_dataset = singleCET_dataset(
                 cet_path,
                 subtomo_length=subtomo_length,
                 p=p,
@@ -182,6 +196,23 @@ if args['dataset'] in ['singleCET_FourierDataset', 'singleCET_dataset']:
                 gt_tomo_path=gt_cet_path,
                 **deconv_kwargs
             )
+elif args['dataset'] == 'singleCET_FourierDataset':
+        n_bernoulli_samples = 12
+        my_dataset = singleCET_FourierDataset(
+                cet_path,
+                subtomo_length=subtomo_length,
+                p=p,
+                n_bernoulli_samples=n_bernoulli_samples,
+                volumetric_scale_factor=volumetric_scale_factor,
+                Vmask_probability=Vmask_probability,
+                Vmask_pct=Vmask_pct,
+                transform=None,
+                n_shift=0,
+                gt_tomo_path=gt_cet_path,
+                hiFreqMask_prob=hiFreqMask_prob,
+                **deconv_kwargs
+            )
+    
 
 # this is taking two means: first per bernoulli batches, and then again for each time the model was run
 # total predictions is the inner_range*n_bernoulli_samples
