@@ -251,6 +251,7 @@ class singleCET_FourierDataset(singleCET_dataset):
         transform=None,
         n_shift=0,
         gt_tomo_path=None,
+        input_as_target=False,
         hiFreqMask_prob=0,
         **deconv_kwargs
     ):
@@ -273,6 +274,7 @@ class singleCET_FourierDataset(singleCET_dataset):
         self.dataF = torch.fft.rfftn(self.data)
         self.tomoF_shape = self.dataF.shape
         # here we only create one set of M bernoulli masks to be sampled from
+        self.input_as_target = input_as_target
         self.hiFreqMask_prob = hiFreqMask_prob
         self.fourier_samples = self.create_FourierSamples()
 
@@ -367,7 +369,7 @@ class singleCET_FourierDataset(singleCET_dataset):
         # make it correspond to only real part of spectrum
         shell_mask = shell_mask[..., 0:self.tomoF_shape[-1]]
 
-        return shell_mask.unsqueeze(0)
+        return shell_mask.float().unsqueeze(0)
 
     def create_mask(self):
         if np.random.uniform() < self.hiFreqMask_prob:
@@ -392,8 +394,9 @@ class singleCET_FourierDataset(singleCET_dataset):
     def create_FourierSamples(self):
         "Create a predefined set of fourier space samples that will be sampled from on each __getitem__ call"
         print('Creating Fourier samples...')
-        # the factor of 2 comes from the splitting we will do afterwards to map samples to samples
+        # the factor of 2 comes from the splitting we might do afterwards to map samples to samples
         M = 2*self.n_bernoulli_samples
+
         samples = torch.cat([self.create_batchFourierSamples(M) for i in range(10)])
         print('Done!')
 
@@ -419,14 +422,27 @@ class singleCET_FourierDataset(singleCET_dataset):
         else:
             gt_subtomo = None
 
-        sample_idx = np.random.choice(
-            range(len(self.fourier_samples)),
-            2*self.n_bernoulli_samples,
-            replace=False,
-        )
-        samples = self.fourier_samples[sample_idx][..., z_min:z_max, y_min:y_max, x_min:x_max]
-        # very importantly here we are mapping samples to samples
-        subtomo, target = torch.split(samples, self.n_bernoulli_samples)
+        if self.input_as_target:
+            sample_idx = np.random.choice(
+                range(len(self.fourier_samples)),
+                self.n_bernoulli_samples,
+                replace=False,
+            )
+            subtomo = self.fourier_samples[sample_idx][..., z_min:z_max, y_min:y_max, x_min:x_max]
+            # IMPORTANT! we are mapping samples to input
+            target = self.data[z_min:z_max, y_min:y_max, x_min:x_max]
+            target = target.unsqueeze(0).repeat(
+                self.n_bernoulli_samples, 1, 1, 1, 1
+                )
+        else:
+            sample_idx = np.random.choice(
+                range(len(self.fourier_samples)),
+                2*self.n_bernoulli_samples,
+                replace=False,
+            )
+            samples = self.fourier_samples[sample_idx][..., z_min:z_max, y_min:y_max, x_min:x_max]
+            # IMPORTANT! we are mapping samples to samples
+            subtomo, target = torch.split(samples, self.n_bernoulli_samples)
 
         if gt_subtomo is not None:
             gt_subtomo = gt_subtomo.unsqueeze(0).repeat(

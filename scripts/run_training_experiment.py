@@ -2,7 +2,7 @@ import os
 import json
 
 
-experiment_name = 'fourierSampling_comparison'
+experiment_name = 'fourierTarget_comparison'
 deconv_kwargs = {
     'angpix': 14,
     'defocus': 0,
@@ -13,25 +13,32 @@ deconv_kwargs = {
 
 max_epochs = 400
 experiment_args = {
-
     'e0': {
-        'dataset':'singleCET_FourierDataset','deconv_kwargs':deconv_kwargs, 'epochs':max_epochs, 'hiFreqMask_prob':1,
-        'comment': 'Deconvolved Fourier with hiFreqMask'
+        'dataset':'singleCET_FourierDataset', 'epochs':max_epochs, 'hiFreqMask_prob':1,
+        'comment': 'Fourier with hiFreqMask, input as target', 'input_as_target':True
         },
-    'e1': {'dataset':'singleCET_FourierDataset', 'epochs':max_epochs, 'hiFreqMask_prob':1, 'comment': 'Fourier with hiFreqMask'},
+    'e1': {
+        'dataset':'singleCET_FourierDataset', 'epochs':max_epochs, 'hiFreqMask_prob':1,
+        'comment': 'Fourier with hiFreqMask', 'input_as_target':False
+        },
 
     'e2': {
-        'dataset':'singleCET_FourierDataset','deconv_kwargs':deconv_kwargs, 'epochs':max_epochs, 'hiFreqMask_prob':0,
-        'comment': 'Deconvolved Fourier no hiFreqMask'
+        'dataset':'singleCET_FourierDataset', 'epochs':max_epochs, 'hiFreqMask_prob':0.5,
+        'comment': 'Fourier hiFreqMask_prob=0.5 input as target', 'input_as_target':True
         },
-    'e3': {'dataset':'singleCET_FourierDataset', 'epochs':max_epochs, 'hiFreqMask_prob':0, 'comment': 'Fourier no hiFreqMask (OG)'},
+    'e3': {
+        'dataset':'singleCET_FourierDataset', 'epochs':max_epochs, 'hiFreqMask_prob':0.5,
+        'comment': 'Fourier hiFreqMask_prob=0.5', 'input_as_target':False
+        },
 
     'e4': {
-        'dataset':'singleCET_FourierDataset','deconv_kwargs':deconv_kwargs, 'epochs':max_epochs, 'hiFreqMask_prob':0.5,
-        'comment': 'Deconvolved Fourier mix hiFreqMask with p=0.5'
+        'dataset':'singleCET_FourierDataset', 'epochs':max_epochs, 'hiFreqMask_prob':0,
+        'comment': 'Fourier no hiFreqMask, input as target', 'input_as_target':True
         },
-    'e5': {'dataset':'singleCET_FourierDataset', 'epochs':max_epochs, 'hiFreqMask_prob':0.5, 'comment': 'Fourier mix hiFreqMask with p=0.5'},
-
+    'e5': {
+        'dataset':'singleCET_FourierDataset', 'epochs':max_epochs, 'hiFreqMask_prob':0,
+        'comment': 'Fourier no hiFreqMask', 'input_as_target':False
+        },
     }
 
 experiment_logdir = '/home/ubuntu/Thesis/data/S2SDenoising/experiment_args'
@@ -55,7 +62,8 @@ default_args = {
     "deconv_kwargs": {},
     "use_deconv_as_target": None,
     "comment": None,
-    "hiFreqMask_prob":None
+    "hiFreqMask_prob":None,
+    "input_as_target":None,
     }
 
 
@@ -70,7 +78,7 @@ if __name__ == "__main__":
         json.dump(experiment_args, f)
 
     for exp in experiment_args:
-        tomo_name = 'tomoPhantom_model14_noisyGaussPoiss'
+        tomo_name = 'tomoPhantom_model14_noisyGaussPoissPerlin'
         args = default_args.copy()
         args['tomo_name'] = tomo_name
         # the new args is the dictionary of the experiment arguments
