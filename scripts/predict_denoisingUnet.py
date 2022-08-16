@@ -43,6 +43,7 @@ with open(os.path.join(logdir, 'experiment_args.json'), 'r') as f:
 deconv_kwargs = exp_args['deconv_kwargs']
 predict_simRecon = exp_args['predict_simRecon']
 use_deconv_as_target = exp_args['use_deconv_as_target']
+hiFreqMask_prob = parse_null_arg(exp_args['hiFreqMask_prob'], float)
 
 model, hparams = load_model(logdir, DataParallel=True)
 
@@ -58,9 +59,8 @@ Vmask_probability = parse_null_arg(hparams['Vmask_probability'], float)
 Vmask_pct = parse_null_arg(hparams['Vmask_pct'], float)
 alpha = hparams['loss_fn']['alpha']
 
-if dataset in ['singleCET_FourierDataset', 'singleCET_dataset']:
-    _dataset = eval(dataset)
-    my_dataset = _dataset(
+if dataset == 'singleCET_dataset':
+    my_dataset = singleCET_dataset(
                 cet_path,
                 subtomo_length=subtomo_length,
                 p=p,
@@ -73,7 +73,24 @@ if dataset in ['singleCET_FourierDataset', 'singleCET_dataset']:
                 gt_tomo_path=gt_cet_path,
                 **deconv_kwargs
             )
-elif dataset in ['singleCET_ProjectedDataset']:
+
+elif dataset == 'singleCET_FourierDataset':
+    my_dataset = singleCET_FourierDataset(
+                cet_path,
+                subtomo_length=subtomo_length,
+                p=p,
+                n_bernoulli_samples=n_bernoulli_samples,
+                volumetric_scale_factor=volumetric_scale_factor,
+                Vmask_probability=Vmask_probability,
+                Vmask_pct=Vmask_pct,
+                transform=None,
+                n_shift=0,
+                gt_tomo_path=gt_cet_path,
+                hiFreqMask_prob=hiFreqMask_prob,
+                **deconv_kwargs
+            )
+
+elif dataset == 'singleCET_ProjectedDataset':
     my_dataset = singleCET_ProjectedDataset(
                 cet_path,
                 subtomo_length=subtomo_length,
