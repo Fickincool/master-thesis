@@ -43,6 +43,7 @@ predict_simRecon = args['predict_simRecon']
 use_deconv_as_target = args['use_deconv_as_target']
 
 hiFreqMask_prob = args['hiFreqMask_prob']
+input_as_target = args['input_as_target']
 
 tomo_name = args['tomo_name']
 
@@ -106,6 +107,7 @@ elif args['dataset'] == 'singleCET_FourierDataset':
                 n_shift=n_shift, 
                 gt_tomo_path=gt_cet_path,
                 hiFreqMask_prob=hiFreqMask_prob,
+                input_as_target=input_as_target,
                 **deconv_kwargs
             )
 
@@ -210,6 +212,7 @@ elif args['dataset'] == 'singleCET_FourierDataset':
                 n_shift=0,
                 gt_tomo_path=gt_cet_path,
                 hiFreqMask_prob=hiFreqMask_prob,
+                input_as_target=input_as_target,
                 **deconv_kwargs
             )
     
