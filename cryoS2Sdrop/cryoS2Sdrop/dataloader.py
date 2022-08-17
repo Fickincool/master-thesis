@@ -251,6 +251,8 @@ class singleCET_FourierDataset(singleCET_dataset):
         transform=None,
         n_shift=0,
         gt_tomo_path=None,
+        input_as_target=False,
+        hiFreqMask_prob=0,
         **deconv_kwargs
     ):
         """
@@ -272,9 +274,58 @@ class singleCET_FourierDataset(singleCET_dataset):
         self.dataF = torch.fft.rfftn(self.data)
         self.tomoF_shape = self.dataF.shape
         # here we only create one set of M bernoulli masks to be sampled from
+        self.input_as_target = input_as_target
+        self.hiFreqMask_prob = hiFreqMask_prob
         self.fourier_samples = self.create_FourierSamples()
 
         return
+
+    def make_shell(self, inner_radius, delta_r, tomo_shape):
+        """
+        Creates a (3D) shell with given inner_radius and delta_r width centered at the middle of the array.
+        
+        """
+        outer_radius = inner_radius + delta_r
+
+        length = min(tomo_shape)
+        mask_shape = len(tomo_shape) * [length]
+        _shell_mask = np.zeros(mask_shape)
+
+        # only do positive quadrant first
+        for z in range(0, outer_radius + 1):
+            for y in range(0, outer_radius + 1):
+                for x in range(0, outer_radius + 1):
+                
+
+                    r = np.linalg.norm([z, y, x])
+
+                    if r >= inner_radius and r < outer_radius:
+                        zidx = z + length // 2
+                        yidx = y + length // 2
+                        xidx = x + length // 2
+
+                        _shell_mask[zidx, yidx, xidx] = 1
+
+        # first get shell for x>0
+        aux = (
+            np.rot90(_shell_mask, axes=(0, 1))
+            + np.rot90(_shell_mask, 2, axes=(0, 1))
+            + np.rot90(_shell_mask, 3, axes=(0, 1))
+            + np.rot90(_shell_mask, 2, axes=(0, 2))
+            + np.rot90(_shell_mask, 3, axes=(0, 2))
+            + np.rot90(_shell_mask, 2, axes=(1, 2))
+        )
+        aux2 = _shell_mask + aux
+
+        # finally, fill the actual shape of the tomogram with the mask
+        shell_mask = np.zeros(tomo_shape)
+        shell_mask[
+            (tomo_shape[0] - length) // 2 : (tomo_shape[0] + length) // 2,
+            (tomo_shape[1] - length) // 2 : (tomo_shape[1] + length) // 2,
+            (tomo_shape[2] - length) // 2 : (tomo_shape[2] + length) // 2
+        ] = aux2
+
+        return shell_mask
 
     def create_Vmask(self):
         "Create volumetric blind spot random mask"
@@ -305,24 +356,37 @@ class singleCET_FourierDataset(singleCET_dataset):
 
         return bernoulli_Pmask
 
-    def create_bernoulliMask(self):
-        if np.random.uniform() < self.Vmask_probability:
-            # might work as an augmentation technique.
-            bernoulli_mask = self.create_Vmask()
+    def create_hiFreqMask(self):
+        "Randomly mask high frequencies with a sphere"
+        inner = 0
+        # outer radius cannot be bigger than half of the tomo's smallest dimension
+        outer = np.random.randint(int(0.2*min(self.tomo_shape)//2), min(self.tomo_shape)//2)
+
+        shell_mask = self.make_shell(inner, outer-inner, self.tomo_shape)
+        shell_mask = torch.tensor(shell_mask)
+        # make shell correspond to the unshifted spectrum
+        shell_mask = torch.fft.ifftshift(shell_mask)
+        # make it correspond to only real part of spectrum
+        shell_mask = shell_mask[..., 0:self.tomoF_shape[-1]]
+
+        return shell_mask.float().unsqueeze(0)
+
+    def create_mask(self):
+        if np.random.uniform() < self.hiFreqMask_prob:
+            mask = self.create_hiFreqMask()
         else:
-            bernoulli_mask = self.create_Pmask()
+            mask = self.create_Pmask()
 
-
-        return bernoulli_mask
+        return mask
 
     def create_batchFourierSamples(self, M):
-        bernoulli_mask = torch.stack(
-            [self.create_bernoulliMask() for i in range(M)], axis=0,
+        mask = torch.stack(
+            [self.create_mask() for i in range(M)], axis=0,
         )
         fourier_samples = self.dataF.unsqueeze(0).repeat(
                 M, 1, 1, 1, 1
             )
-        fourier_samples = fourier_samples*bernoulli_mask
+        fourier_samples = fourier_samples*mask
         samples = torch.fft.irfftn(fourier_samples, dim=[-3, -2, -1])
 
         return samples
@@ -330,7 +394,9 @@ class singleCET_FourierDataset(singleCET_dataset):
     def create_FourierSamples(self):
         "Create a predefined set of fourier space samples that will be sampled from on each __getitem__ call"
         print('Creating Fourier samples...')
+        # the factor of 2 comes from the splitting we might do afterwards to map samples to samples
         M = 2*self.n_bernoulli_samples
+
         samples = torch.cat([self.create_batchFourierSamples(M) for i in range(10)])
         print('Done!')
 
@@ -356,13 +422,27 @@ class singleCET_FourierDataset(singleCET_dataset):
         else:
             gt_subtomo = None
 
-        sample_idx = np.random.choice(
-            range(len(self.fourier_samples)),
-            2*self.n_bernoulli_samples,
-            replace=False,
-        )
-        samples = self.fourier_samples[sample_idx][..., z_min:z_max, y_min:y_max, x_min:x_max]
-        subtomo, target = torch.split(samples, self.n_bernoulli_samples)
+        if self.input_as_target:
+            sample_idx = np.random.choice(
+                range(len(self.fourier_samples)),
+                self.n_bernoulli_samples,
+                replace=False,
+            )
+            subtomo = self.fourier_samples[sample_idx][..., z_min:z_max, y_min:y_max, x_min:x_max]
+            # IMPORTANT! we are mapping samples to input
+            target = self.data[z_min:z_max, y_min:y_max, x_min:x_max]
+            target = target.unsqueeze(0).repeat(
+                self.n_bernoulli_samples, 1, 1, 1, 1
+                )
+        else:
+            sample_idx = np.random.choice(
+                range(len(self.fourier_samples)),
+                2*self.n_bernoulli_samples,
+                replace=False,
+            )
+            samples = self.fourier_samples[sample_idx][..., z_min:z_max, y_min:y_max, x_min:x_max]
+            # IMPORTANT! we are mapping samples to samples
+            subtomo, target = torch.split(samples, self.n_bernoulli_samples)
 
         if gt_subtomo is not None:
             gt_subtomo = gt_subtomo.unsqueeze(0).repeat(
