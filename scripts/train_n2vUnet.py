@@ -22,7 +22,8 @@ PARENT_PATH = setup.PARENT_PATH
 
 # cet_path = os.path.join(PARENT_PATH, 'data/raw_cryo-ET/tomo02.mrc')
 # cet_path = os.path.join(PARENT_PATH, 'data/S2SDenoising/dummy_tomograms/tomo04_deconvDummy.mrc')
-tomo_name = 'tomo02_cryoCAREDummy_noisyGaussPoiss'
+tomo_name = 'tomo02_dummy'
+use_deconv_data = True
 cet_path = os.path.join(
     PARENT_PATH, "data/S2SDenoising/dummy_tomograms/%s.mrc" %tomo_name
 )
@@ -54,8 +55,6 @@ deconv_kwargs['vol'] = imgs[0][0,...,0]
 
 if len(imgs)>1:
     raise ValueError("Deconvolution not implemented for more than 1 training tomogram.")
-
-use_deconv_data = True
 
 if use_deconv_data: 
     imgs[0][0,...,0] = tom_deconv_tomo(**deconv_kwargs)

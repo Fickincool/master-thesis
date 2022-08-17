@@ -452,7 +452,7 @@ class singleCET_FourierDataset(singleCET_dataset):
         if self.transform:
             subtomo, target, gt_subtomo = self.transform(subtomo, target, gt_subtomo)
             
-        return subtomo.float(), target.float(), gt_subtomo.float()
+        return subtomo, target, gt_subtomo
 
 
 class singleCET_ProjectedDataset(Dataset):

@@ -2,7 +2,8 @@ import os
 import json
 
 
-experiment_name = 'fourierTarget_comparison'
+experiment_name = 'fourierHighFreqMask_comparison'
+tomo_name = 'tomo02_dummy'
 deconv_kwargs = {
     'angpix': 14,
     'defocus': 0,
@@ -15,29 +16,15 @@ max_epochs = 400
 experiment_args = {
     'e0': {
         'dataset':'singleCET_FourierDataset', 'epochs':max_epochs, 'hiFreqMask_prob':1,
-        'comment': 'Fourier with hiFreqMask, input as target', 'input_as_target':True
+        'comment': 'Fourier with hiFreqMask', 'input_as_target':False, 'deconv_kwargs':deconv_kwargs
         },
     'e1': {
-        'dataset':'singleCET_FourierDataset', 'epochs':max_epochs, 'hiFreqMask_prob':1,
-        'comment': 'Fourier with hiFreqMask', 'input_as_target':False
+        'dataset':'singleCET_FourierDataset', 'epochs':max_epochs, 'hiFreqMask_prob':0.5,
+        'comment': 'Fourier with hiFreqMask=0.5', 'input_as_target':False, 'deconv_kwargs':deconv_kwargs
         },
-
     'e2': {
-        'dataset':'singleCET_FourierDataset', 'epochs':max_epochs, 'hiFreqMask_prob':0.5,
-        'comment': 'Fourier hiFreqMask_prob=0.5 input as target', 'input_as_target':True
-        },
-    'e3': {
-        'dataset':'singleCET_FourierDataset', 'epochs':max_epochs, 'hiFreqMask_prob':0.5,
-        'comment': 'Fourier hiFreqMask_prob=0.5', 'input_as_target':False
-        },
-
-    'e4': {
         'dataset':'singleCET_FourierDataset', 'epochs':max_epochs, 'hiFreqMask_prob':0,
-        'comment': 'Fourier no hiFreqMask, input as target', 'input_as_target':True
-        },
-    'e5': {
-        'dataset':'singleCET_FourierDataset', 'epochs':max_epochs, 'hiFreqMask_prob':0,
-        'comment': 'Fourier no hiFreqMask', 'input_as_target':False
+        'comment': 'Fourier no hiFreqMask (OG)', 'input_as_target':False, 'deconv_kwargs':deconv_kwargs
         },
     }
 
@@ -78,7 +65,6 @@ if __name__ == "__main__":
         json.dump(experiment_args, f)
 
     for exp in experiment_args:
-        tomo_name = 'tomoPhantom_model14_noisyGaussPoissPerlin'
         args = default_args.copy()
         args['tomo_name'] = tomo_name
         # the new args is the dictionary of the experiment arguments
