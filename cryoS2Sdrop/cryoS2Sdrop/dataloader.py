@@ -5,6 +5,8 @@ from tomoSegmentPipeline.utils.common import read_array
 import tomopy.sim.project as proj
 from tomopy.recon.algorithm import recon
 from .deconvolution import tom_deconv_tomo
+from scipy.stats import multivariate_normal
+
 
 
 class singleCET_dataset(Dataset):
@@ -252,7 +254,7 @@ class singleCET_FourierDataset(singleCET_dataset):
         n_shift=0,
         gt_tomo_path=None,
         input_as_target=False,
-        hiFreqMask_prob=0,
+        weightedBernoulliMask_prob=0,
         **deconv_kwargs
     ):
         """
@@ -273,9 +275,16 @@ class singleCET_FourierDataset(singleCET_dataset):
             
         self.dataF = torch.fft.rfftn(self.data)
         self.tomoF_shape = self.dataF.shape
+        self.logPower_Fdata = np.log(np.abs(self.dataF)**2)
+        # the spectrum still shows strong outliers
+        self.logPower_Fdata = self.standardize(self.clip(self.logPower_Fdata))
+        self.power_Fdata = np.exp(self.logPower_Fdata)
+        
+        self.highPower_mask = torch.tensor(self.power_Fdata>np.quantile(self.power_Fdata, 0.5))*1.0
+        self.drawProbs = self.create_drawProbTensor()
         # here we only create one set of M bernoulli masks to be sampled from
         self.input_as_target = input_as_target
-        self.hiFreqMask_prob = hiFreqMask_prob
+        self.weightedBernoulliMask_prob = weightedBernoulliMask_prob
         self.fourier_samples = self.create_FourierSamples()
 
         return
@@ -347,6 +356,34 @@ class singleCET_FourierDataset(singleCET_dataset):
 
         return bernoulli_Vmask
 
+    def create_drawProbTensor(self):
+        z, y, x = np.mgrid[0:self.tomo_shape[0]:1, 0:self.tomo_shape[1]:1, 0:self.tomo_shape[2]:1]
+
+        zyx = np.column_stack([z.flat, y.flat, x.flat])
+
+        mu = np.array(self.tomo_shape)//2
+        sigma = np.array(self.tomo_shape)//4
+        covariance = np.diag(sigma**2)
+
+        rv = multivariate_normal(mu, covariance)
+        pdf = rv.pdf(zyx)
+        pdf = pdf.reshape(self.tomo_shape)
+        pdf = torch.tensor(pdf)
+
+        # make shell correspond to the unshifted spectrum
+        pdf = torch.fft.ifftshift(pdf)
+        # make it correspond to only real part of spectrum
+        pdf = pdf[..., 0:self.tomoF_shape[-1]]
+
+        draw_probs = pdf/pdf.max()
+
+        return draw_probs
+
+    def create_weightedBernoulliMask(self):
+        weighted_bernoulli_mask = torch.bernoulli(0.5*self.drawProbs+0.3*self.highPower_mask+0.05)
+        weighted_bernoulli_mask = weighted_bernoulli_mask.float().unsqueeze(0)
+        return weighted_bernoulli_mask
+
     def create_Pmask(self):
         "Create pointed blind spot random mask"
         _shape = self.tomoF_shape
@@ -356,24 +393,9 @@ class singleCET_FourierDataset(singleCET_dataset):
 
         return bernoulli_Pmask
 
-    def create_hiFreqMask(self):
-        "Randomly mask high frequencies with a sphere"
-        inner = 0
-        # outer radius cannot be bigger than half of the tomo's smallest dimension
-        outer = np.random.randint(int(0.2*min(self.tomo_shape)//2), min(self.tomo_shape)//2)
-
-        shell_mask = self.make_shell(inner, outer-inner, self.tomo_shape)
-        shell_mask = torch.tensor(shell_mask)
-        # make shell correspond to the unshifted spectrum
-        shell_mask = torch.fft.ifftshift(shell_mask)
-        # make it correspond to only real part of spectrum
-        shell_mask = shell_mask[..., 0:self.tomoF_shape[-1]]
-
-        return shell_mask.float().unsqueeze(0)
-
     def create_mask(self):
-        if np.random.uniform() < self.hiFreqMask_prob:
-            mask = self.create_hiFreqMask()
+        if np.random.uniform() < self.weightedBernoulliMask_prob:
+            mask = self.create_weightedBernoulliMask()
         else:
             mask = self.create_Pmask()
 
@@ -397,7 +419,7 @@ class singleCET_FourierDataset(singleCET_dataset):
         # the factor of 2 comes from the splitting we might do afterwards to map samples to samples
         M = 2*self.n_bernoulli_samples
 
-        samples = torch.cat([self.create_batchFourierSamples(M) for i in range(10)])
+        samples = torch.cat([self.create_batchFourierSamples(M) for i in range(8)])
         print('Done!')
 
         return samples
@@ -468,7 +490,7 @@ class singleCET_ProjectedDataset(Dataset):
         **deconv_kwargs
     ):
         """
-        Load cryoET dataset and simulate 2 independent projections for N2N denoising. All data is deconvolved.
+        Load cryoET dataset and simulate 2 independent projections for N2N denoising. All data can be optionally deconvolved.
 
         The dataset consists of subtomograms of shape [C, S, S, S] C (equal to 1) is the number of channels and 
         S is the subtomogram side length.

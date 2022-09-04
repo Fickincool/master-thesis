@@ -43,7 +43,7 @@ with open(os.path.join(logdir, 'experiment_args.json'), 'r') as f:
 deconv_kwargs = exp_args['deconv_kwargs']
 predict_simRecon = exp_args['predict_simRecon']
 use_deconv_as_target = exp_args['use_deconv_as_target']
-hiFreqMask_prob = parse_null_arg(exp_args['hiFreqMask_prob'], float)
+weightedBernoulliMask_prob = parse_null_arg(exp_args['weightedBernoulliMask_prob'], float)
 
 model, hparams = load_model(logdir, DataParallel=True)
 
@@ -86,7 +86,7 @@ elif dataset == 'singleCET_FourierDataset':
                 transform=None,
                 n_shift=0,
                 gt_tomo_path=gt_cet_path,
-                hiFreqMask_prob=hiFreqMask_prob,
+                weightedBernoulliMask_prob=weightedBernoulliMask_prob,
                 **deconv_kwargs
             )
 

@@ -42,7 +42,7 @@ num_gpus = args['num_gpus']
 predict_simRecon = args['predict_simRecon']
 use_deconv_as_target = args['use_deconv_as_target']
 
-hiFreqMask_prob = args['hiFreqMask_prob']
+weightedBernoulliMask_prob = args['weightedBernoulliMask_prob']
 input_as_target = args['input_as_target']
 
 tomo_name = args['tomo_name']
@@ -69,7 +69,14 @@ elif tomo_name.startswith('tomo'):
         PARENT_PATH, "data/S2SDenoising/dummy_tomograms/%s_cryoCAREDummy.mrc" %_name
     )
     
-
+elif tomo_name.startswith('shrec2021'):
+    cet_path = os.path.join(
+        PARENT_PATH, "data/S2SDenoising/dummy_tomograms/%s.mrc" %tomo_name
+    )
+    _name = tomo_name.split('_')[1]
+    gt_cet_path = os.path.join(
+        PARENT_PATH, "data/S2SDenoising/dummy_tomograms/shrec2021_%s_gtDummy.mrc" %_name
+    )
 ##################################### Model and dataloader ####################################################
 
 tensorboard_logdir = os.path.join(PARENT_PATH, "data/S2SDenoising/tryout_model_logs/%s/%s/" %(tomo_name, exp_name))
@@ -106,7 +113,7 @@ elif args['dataset'] == 'singleCET_FourierDataset':
                 transform=None,
                 n_shift=n_shift, 
                 gt_tomo_path=gt_cet_path,
-                hiFreqMask_prob=hiFreqMask_prob,
+                weightedBernoulliMask_prob=weightedBernoulliMask_prob,
                 input_as_target=input_as_target,
                 **deconv_kwargs
             )
@@ -211,7 +218,7 @@ elif args['dataset'] == 'singleCET_FourierDataset':
                 transform=None,
                 n_shift=0,
                 gt_tomo_path=gt_cet_path,
-                hiFreqMask_prob=hiFreqMask_prob,
+                weightedBernoulliMask_prob=weightedBernoulliMask_prob,
                 input_as_target=input_as_target,
                 **deconv_kwargs
             )
