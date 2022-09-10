@@ -183,10 +183,12 @@ class Denoising_3DUNet(pl.LightningModule):
             bernoulliBatch_subtomo = self.batch2bernoulliBatch(bernoulli_subtomo)
             bernoulliBatch_pred = self.batch2bernoulliBatch(pred)
             bernoulliBatch_gt_subtomo = self.batch2bernoulliBatch(gt_subtomo)
-            baseline_ssim = self.ssim_monitoring(bernoulliBatch_subtomo, bernoulliBatch_gt_subtomo)
-            baseline_psnr = self.psnr_monitoring(bernoulliBatch_subtomo, bernoulliBatch_gt_subtomo)
-            monitor_ssim = self.ssim_monitoring(bernoulliBatch_pred, bernoulliBatch_gt_subtomo)
-            monitor_psnr = self.psnr_monitoring(bernoulliBatch_pred, bernoulliBatch_gt_subtomo)
+            baseline_ssim, baseline_psnr = self.ssim_psnr_monitoring(
+                bernoulliBatch_subtomo, bernoulliBatch_gt_subtomo
+            )
+            monitor_ssim, monitor_psnr = self.ssim_psnr_monitoring(
+                bernoulliBatch_pred, bernoulliBatch_gt_subtomo
+            )
 
             self.log(
                 "ssim/baseline",
@@ -234,28 +236,30 @@ class Denoising_3DUNet(pl.LightningModule):
     def batch2bernoulliBatch(self, subtomo):
         return torch.split(subtomo, self.n_bernoulli_samples)
 
-    def ssim_monitoring(self, bernoulliBatch_subtomo, bernoulliBatch_gt_subtomo):
-        monitor = 0
-        for bBatch_subtomo, bBatch_gt in zip(bernoulliBatch_subtomo, bernoulliBatch_gt_subtomo):
-            _monitor = ssim(bBatch_subtomo.mean((0)), bBatch_gt.mean((0)))
-            monitor += _monitor
+    def ssim_psnr_monitoring(self, bernoulliBatch_subtomo, bernoulliBatch_gt_subtomo):
+        ssim_monitor = 0
+        psnr_monitor = 0
+        for bBatch_subtomo, bBatch_gt in zip(
+            bernoulliBatch_subtomo, bernoulliBatch_gt_subtomo
+        ):
+            # we first normalize the images
+            X = bBatch_subtomo.mean(0)
+            X = (X - X.min() + 1e-4) / (X.max() - X.min() + 1e-4)
+            Y = bBatch_gt.mean(0)
+            Y = (Y - Y.min() + 1e-4) / (Y.max() - Y.min() + 1e-4)
+
+            _ssim, _psnr = float(ssim(X, Y, data_range=1)), float(
+                peak_signal_noise_ratio(X, Y, data_range=1)
+            )
+            ssim_monitor += _ssim
+            psnr_monitor += _psnr
 
         # take the mean wrt batch
-        return monitor/len(bernoulliBatch_gt_subtomo)
+        ssim_monitor = ssim_monitor / len(bernoulliBatch_gt_subtomo)
+        psnr_monitor = psnr_monitor / len(bernoulliBatch_gt_subtomo)
 
-    def psnr_monitoring(self, bernoulliBatch_subtomo, bernoulliBatch_gt_subtomo):
-        monitor = 0
-        for bBatch_subtomo, bBatch_gt in zip(bernoulliBatch_subtomo, bernoulliBatch_gt_subtomo):
-            i, j = bBatch_subtomo.mean((0)), bBatch_gt.mean((0)) # 1 Channel, 3D images [C, S, S, S]
-            # data is standardized, we don't expect to see any value further than 10 std from the origin
-            data_range = 18 
-            if j.abs().max() > 9:
-                raise ValueError('Found input values for ground truth further than 9 std away from the origin.')
-            _monitor = peak_signal_noise_ratio(i, j, data_range)
-            monitor += _monitor
+        return ssim_monitor, psnr_monitor
 
-        # take the mean wrt batch
-        return monitor/len(bernoulliBatch_gt_subtomo)
 
 class Denoising_3DUNet_v2(Denoising_3DUNet):
     def training_step(self, batch):
@@ -276,10 +280,12 @@ class Denoising_3DUNet_v2(Denoising_3DUNet):
             bernoulliBatch_subtomo = self.batch2bernoulliBatch(bernoulli_subtomo)
             bernoulliBatch_pred = self.batch2bernoulliBatch(pred)
             bernoulliBatch_gt_subtomo = self.batch2bernoulliBatch(gt_subtomo)
-            baseline_ssim = self.ssim_monitoring(bernoulliBatch_subtomo, bernoulliBatch_gt_subtomo)
-            baseline_psnr = self.psnr_monitoring(bernoulliBatch_subtomo, bernoulliBatch_gt_subtomo)
-            monitor_ssim = self.ssim_monitoring(bernoulliBatch_pred, bernoulliBatch_gt_subtomo)
-            monitor_psnr = self.psnr_monitoring(bernoulliBatch_pred, bernoulliBatch_gt_subtomo)
+            baseline_ssim, baseline_psnr = self.ssim_psnr_monitoring(
+                bernoulliBatch_subtomo, bernoulliBatch_gt_subtomo
+            )
+            monitor_ssim, monitor_psnr = self.ssim_psnr_monitoring(
+                bernoulliBatch_pred, bernoulliBatch_gt_subtomo
+            )
 
             self.log(
                 "ssim/baseline",
@@ -326,6 +332,7 @@ class Denoising_3DUNet_v2(Denoising_3DUNet):
 
 
 ############################### 2D ################################################################
+
 
 class Denoising_2DUNet(pl.LightningModule):
     def __init__(self, loss_fn, lr, n_features, p, n_bernoulli_samples):
@@ -493,8 +500,12 @@ class Denoising_2DUNet(pl.LightningModule):
         if gt_subtomo is not None:
             bernoulliBatch_subtomo = self.batch2bernoulliBatch(bernoulli_subtomo)
             bernoulliBatch_gt_subtomo = self.batch2bernoulliBatch(gt_subtomo)
-            monitor_ssim = self.ssim_monitoring(bernoulliBatch_subtomo, bernoulliBatch_gt_subtomo)
-            monitor_psnr = self.psnr_monitoring(bernoulliBatch_subtomo, bernoulliBatch_gt_subtomo)
+            monitor_ssim = self.ssim_monitoring(
+                bernoulliBatch_subtomo, bernoulliBatch_gt_subtomo
+            )
+            monitor_psnr = self.psnr_monitoring(
+                bernoulliBatch_subtomo, bernoulliBatch_gt_subtomo
+            )
 
             self.log(
                 "hp/ssim",
@@ -526,26 +537,34 @@ class Denoising_2DUNet(pl.LightningModule):
 
     def ssim_monitoring(self, bernoulliBatch_subtomo, bernoulliBatch_gt_subtomo):
         monitor = 0
-        for bBatch_subtomo, bBatch_gt in zip(bernoulliBatch_subtomo, bernoulliBatch_gt_subtomo):
+        for bBatch_subtomo, bBatch_gt in zip(
+            bernoulliBatch_subtomo, bernoulliBatch_gt_subtomo
+        ):
             _monitor = ssim(bBatch_subtomo.mean((0)), bBatch_gt.mean((0)))
             monitor += _monitor
 
         # take the mean wrt batch
-        return monitor/len(bernoulliBatch_gt_subtomo)
+        return monitor / len(bernoulliBatch_gt_subtomo)
 
     def psnr_monitoring(self, bernoulliBatch_subtomo, bernoulliBatch_gt_subtomo):
         monitor = 0
-        for bBatch_subtomo, bBatch_gt in zip(bernoulliBatch_subtomo, bernoulliBatch_gt_subtomo):
-            i, j = bBatch_subtomo.mean((0)), bBatch_gt.mean((0)) # 1 Channel, 3D images [C, S, S, S]
+        for bBatch_subtomo, bBatch_gt in zip(
+            bernoulliBatch_subtomo, bernoulliBatch_gt_subtomo
+        ):
+            i, j = bBatch_subtomo.mean((0)), bBatch_gt.mean(
+                (0)
+            )  # 1 Channel, 3D images [C, S, S, S]
             # data is standardized, we don't expect to see any value further than 10 std from the origin
-            data_range = 18 
+            data_range = 18
             if j.abs().max() > 9:
-                raise ValueError('Found input values for ground truth further than 9 std away from the origin.')
+                raise ValueError(
+                    "Found input values for ground truth further than 9 std away from the origin."
+                )
             _monitor = peak_signal_noise_ratio(i, j, data_range)
             monitor += _monitor
 
         # take the mean wrt batch
-        return monitor/len(bernoulliBatch_gt_subtomo)
+        return monitor / len(bernoulliBatch_gt_subtomo)
 
 
 class Denoising_2DUNet_v2(Denoising_2DUNet):
@@ -566,8 +585,12 @@ class Denoising_2DUNet_v2(Denoising_2DUNet):
         if gt_subtomo is not None:
             bernoulliBatch_subtomo = self.batch2bernoulliBatch(bernoulli_subtomo)
             bernoulliBatch_gt_subtomo = self.batch2bernoulliBatch(gt_subtomo)
-            monitor_ssim = self.ssim_monitoring(bernoulliBatch_subtomo, bernoulliBatch_gt_subtomo)
-            monitor_psnr = self.psnr_monitoring(bernoulliBatch_subtomo, bernoulliBatch_gt_subtomo)
+            monitor_ssim = self.ssim_monitoring(
+                bernoulliBatch_subtomo, bernoulliBatch_gt_subtomo
+            )
+            monitor_psnr = self.psnr_monitoring(
+                bernoulliBatch_subtomo, bernoulliBatch_gt_subtomo
+            )
 
             self.log(
                 "hp/ssim",

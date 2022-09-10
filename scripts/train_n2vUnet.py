@@ -19,6 +19,26 @@ ssl._create_default_https_context = ssl._create_unverified_context
 
 PARENT_PATH = setup.PARENT_PATH
 
+
+def standardize(X: torch.tensor):
+    mean = X.mean()
+    std = X.std()
+
+    new_X = (X - mean) / std
+
+    return new_X
+
+
+def scale(X):
+    scaled = (X - X.min()) / (X.max() - X.min())
+    return scaled
+
+
+def clip(X, low=0.005, high=0.995):
+    # works with tensors =)
+    return np.clip(X, np.quantile(X, low), np.quantile(X, high))
+
+
 ###################### Input data definition ###################
 
 # cet_path = os.path.join(PARENT_PATH, 'data/raw_cryo-ET/tomo02.mrc')
@@ -30,6 +50,7 @@ cet_path = os.path.join(
 )
 
 gt_cet_path = None
+clip_values = False
 
 name = tomo_name
 
@@ -43,6 +64,10 @@ datagen = N2V_DataGenerator()
 # The function will return a list of images (numpy arrays).
 # In the 'dims' parameter we specify the order of dimensions in the image files we are reading.
 imgs = datagen.load_imgs([cet_path], dims="ZYX")
+# TODO check if standardization affects deconvolution, review order of operations.
+if clip_values:
+    imgs[0][0, ..., 0] = clip(imgs[0][0, ..., 0])
+imgs[0][0, ..., 0] = standardize(imgs[0][0, ..., 0])
 
 deconv_kwargs = {
     "angpix": 14,
@@ -156,6 +181,6 @@ if use_deconv_data:
     filename = cet_path.split("/")[-1].replace(".mrc", "_deconv_n2vDenoised")
 else:
     filename = cet_path.split("/")[-1].replace(".mrc", "_n2vDenoised")
-filename = os.path.join(PARENT_PATH, "data/S2SDenoising/denoised/%s.mrc" % (filename))
+filename = os.path.join(basedir, "%s.mrc" % (filename))
 
 write_array(pred, filename)
