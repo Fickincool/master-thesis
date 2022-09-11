@@ -30,7 +30,7 @@ def standardize(X: torch.tensor):
 
 
 def scale(X):
-    scaled = (X - X.min()) / (X.max() - X.min())
+    scaled = (X - X.min()) / (X.max() - X.min() + 1e-8)
     return scaled
 
 

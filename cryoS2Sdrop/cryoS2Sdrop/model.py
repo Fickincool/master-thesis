@@ -244,9 +244,9 @@ class Denoising_3DUNet(pl.LightningModule):
         ):
             # we first normalize the images
             X = bBatch_subtomo.mean(0)
-            X = (X - X.min() + 1e-4) / (X.max() - X.min() + 1e-4)
+            X = (X - X.min()) / (X.max() - X.min() + 1e-8)
             Y = bBatch_gt.mean(0)
-            Y = (Y - Y.min() + 1e-4) / (Y.max() - Y.min() + 1e-4)
+            Y = (Y - Y.min()) / (Y.max() - Y.min() + 1e-8)
 
             _ssim, _psnr = float(ssim(X, Y, data_range=1)), float(
                 peak_signal_noise_ratio(X, Y, data_range=1)

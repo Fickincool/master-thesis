@@ -126,7 +126,7 @@ class singleCET_dataset(Dataset):
         return new_X
 
     def scale(self, X):
-        scaled = (X - X.min()) / (X.max() - X.min())
+        scaled = (X - X.min()) / (X.max() - X.min() + 1e-8)
         return scaled
 
     def clip(self, X, low=0.005, high=0.995):
