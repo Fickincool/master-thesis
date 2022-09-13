@@ -2,24 +2,19 @@ import os
 import json
 
 
-experiment_name = "realBernoulli_dropoutLevel_comparison"
+experiment_name = "realBernoulli_convolved_comparison"
 tomogram_list = [
-    "tomoPhantom_model8_noisyGaussPoissL",
-    "tomoPhantom_model8_noisyGaussPoissM",
-    "tomoPhantom_model8_noisyGaussPoissH",
-    "tomoPhantom_model14_noisyGaussPoissL",
-    "tomoPhantom_model14_noisyGaussPoissM",
-    "tomoPhantom_model14_noisyGaussPoissH",
-    "tomoPhantom_model16_noisyGaussPoissL",
-    "tomoPhantom_model16_noisyGaussPoissM",
-    "tomoPhantom_model16_noisyGaussPoissH",
+    "shrec2021_model4_dummy",
+    "shrec2021_model2_dummy"
 ]
+
+# SHREC21 deconv args
 deconv_kwargs = {
-    "angpix": 14,
+    "angpix": 10,
     "defocus": 0,
-    "snrfalloff": 1,
+    "snrfalloff": 0.3,
     "deconvstrength": 1,
-    "highpassnyquist": 0.3,
+    "highpassnyquist": 0.02,
 }
 
 max_epochs = 400
@@ -29,28 +24,30 @@ experiment_args = {
         "epochs": max_epochs,
         "comment": "Bernoulli",
         "n_bernoulli_samples_prediction": 20,
-        "p": 0.1,
+        "p": 0.3,
     },
     "e1": {
         "dataset": "singleCET_dataset",
         "epochs": max_epochs,
-        "comment": "Bernoulli",
+        "comment": "Deconvolved Bernoulli",
         "n_bernoulli_samples_prediction": 20,
         "p": 0.3,
+        "deconv_kwargs":deconv_kwargs
     },
     "e2": {
         "dataset": "singleCET_dataset",
         "epochs": max_epochs,
         "comment": "Bernoulli",
         "n_bernoulli_samples_prediction": 20,
-        "p": 0.5,
+        "p": 0.7,
     },
     "e3": {
         "dataset": "singleCET_dataset",
         "epochs": max_epochs,
-        "comment": "Bernoulli",
+        "comment": "Deconvolved Bernoulli",
         "n_bernoulli_samples_prediction": 20,
         "p": 0.7,
+        "deconv_kwargs":deconv_kwargs
     },
 }
 
