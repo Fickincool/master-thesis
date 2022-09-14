@@ -94,7 +94,7 @@ datagen = N2V_DataGenerator()
 # The function will return a list of images (numpy arrays).
 # In the 'dims' parameter we specify the order of dimensions in the image files we are reading.
 imgs = datagen.load_imgs([cet_path], dims="ZYX")
-# TODO check if standardization affects deconvolution, review order of operations.
+
 if clip_values:
     imgs[0][0, ..., 0] = clip(imgs[0][0, ..., 0])
 imgs[0][0, ..., 0] = standardize(imgs[0][0, ..., 0])

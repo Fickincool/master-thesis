@@ -3,22 +3,36 @@ import json
 
 
 experiment_name = "n2vBaseline"
-tomogram_list = [
-    "tomoPhantom_model8_noisyGaussPoissL",
-    "tomoPhantom_model8_noisyGaussPoissM",
-    "tomoPhantom_model8_noisyGaussPoissH",
-    "tomoPhantom_model14_noisyGaussPoissL",
-    "tomoPhantom_model14_noisyGaussPoissM",
-    "tomoPhantom_model14_noisyGaussPoissH",
-    "tomoPhantom_model16_noisyGaussPoissL",
-    "tomoPhantom_model16_noisyGaussPoissM",
-    "tomoPhantom_model16_noisyGaussPoissH",
-]
+# tomogram_list = [
+#     "tomoPhantom_model8_noisyGaussPoissL",
+#     "tomoPhantom_model8_noisyGaussPoissM",
+#     "tomoPhantom_model8_noisyGaussPoissH",
+#     "tomoPhantom_model14_noisyGaussPoissL",
+#     "tomoPhantom_model14_noisyGaussPoissM",
+#     "tomoPhantom_model14_noisyGaussPoissH",
+#     "tomoPhantom_model16_noisyGaussPoissL",
+#     "tomoPhantom_model16_noisyGaussPoissM",
+#     "tomoPhantom_model16_noisyGaussPoissH",
+# ]
 
-deconv_kwargs = {}
+# deconv_kwargs = {}
+
+tomogram_list = ["shrec2021_model4_dummy", "shrec2021_model2_dummy"]
+
+# SHREC21 deconv args
+deconv_kwargs = {
+    "angpix": 10,
+    "defocus": 0,
+    "snrfalloff": 0.3,
+    "deconvstrength": 1,
+    "highpassnyquist": 0.02,
+}
 
 max_epochs = 400
-experiment_args = {"e0": {"epochs": max_epochs}}
+experiment_args = {
+    "e0": {"epochs": max_epochs},
+    "e1": {"epochs": max_epochs, "deconv_kwargs": deconv_kwargs},
+}
 
 experiment_logdir = "/home/ubuntu/Thesis/data/S2SDenoising/experiment_args"
 
