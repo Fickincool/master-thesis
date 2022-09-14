@@ -26,14 +26,15 @@ def load_model(logdir, DataParallel=False):
     with open(logdir + "hparams.yaml") as f:
         s = f.readlines()
         try:
+            dataset = hparams["dataset"]
+        except KeyError:
             dataloader = [x for x in s if "Dataloader" in x][0]
             dataset = (
                 dataloader.split(".")[-1].replace("\n", "").replace("'", "").strip()
             )
-        except:
-            dataset = "Unknown"
 
     hparams["dataset"] = dataset
+
 
     p = float(hparams["p"])  # dropout (zeroing) probability
     n_features = int(hparams["n_features"])
@@ -61,28 +62,71 @@ def collate_fn(batch):
     batch = [list(filter(lambda x: x is not None, b)) for b in batch]
     return torch.utils.data.dataloader.default_collate(batch)
 
+def predict_patch(idx, p0, singleCET_dataset, model):
 
-def predict_full_tomogram(singleCET_dataset, model, N=100):
-
-    tomo_shape = singleCET_dataset.tomo_shape
     subtomo_length = singleCET_dataset.subtomo_length
+
+    zyx_min = np.array(p0) - subtomo_length // 2
+    zyx_max = np.array(p0) + subtomo_length // 2
+
+    subtomo = singleCET_dataset[idx][
+        0
+    ]  # shape: [M, C:=1, S, S, S] or  [C:=1, S, S, S]
+    if len(subtomo.shape) == 4:  # the projected dataset yields this type
+        subtomo = subtomo.unsqueeze(0)  # equivalent to having "1 Bernoulli sample"
+    
+    pred = model(subtomo).detach().cpu()
+
+    return pred, zyx_min, zyx_max
+
+def predict_patch0(idx, p0, singleCET_dataset, model, N):
+
+    subtomo_length = singleCET_dataset.subtomo_length
+
+    zyx_min = np.array(p0) - subtomo_length // 2
+    zyx_max = np.array(p0) + subtomo_length // 2
+    subtomo = singleCET_dataset[idx][
+        0
+    ]  # shape: [M, C:=1, S, S, S] or  [C:=1, S, S, S]
+    if len(subtomo.shape) == 4:  # the projected dataset yields this type
+        subtomo = subtomo.unsqueeze(0)  # equivalent to having "1 Bernoulli sample"
+    # we want to average each patch over N Bernoulli samples, typically N >> M
+    M = len(subtomo)
+    # effective number of samples
+    n_times = N // M + 1
+    pred = torch.cat([model(subtomo).detach().cpu() for i in range(n_times)])
+
+    return pred, zyx_min, zyx_max
+
+
+def predict_full_tomogram(singleCET_dataset, model, resample_patch_each_iter, N=100):
+    tomo_shape = singleCET_dataset.tomo_shape
 
     denoised_tomo = torch.zeros(tomo_shape)
     count_tensor = torch.zeros(tomo_shape)  # for averaging overlapping patches
 
     for idx, p0 in enumerate(tqdm(singleCET_dataset.grid)):
-        zmin, ymin, xmin = np.array(p0) - subtomo_length // 2
-        zmax, ymax, xmax = np.array(p0) + subtomo_length // 2
-        subtomo = singleCET_dataset[idx][
-            0
-        ]  # shape: [M, C:=1, S, S, S] or  [C:=1, S, S, S]
-        if len(subtomo.shape) == 4:  # the projected dataset yields this type
-            subtomo = subtomo.unsqueeze(0)  # equivalent to having "1 Bernoulli sample"
-        # we want to average each patch over N Bernoulli samples, typically N >> M
-        M = len(subtomo)
-        # effective number of samples
-        n_times = N // M + 1
-        pred = torch.cat([model(subtomo).detach().cpu() for i in range(n_times)])
+        M = singleCET_dataset.n_bernoulli_samples
+
+        if resample_patch_each_iter:
+            # effective number of samples
+            n_times = N // M + 1
+            pred = []
+            for n in range(n_times):
+                _pred, zyx_min, zyx_max = predict_patch(idx, p0, singleCET_dataset, model)
+                pred.append(_pred)
+
+            # we want to average each patch over N Bernoulli samples, typically N >> M
+            pred = torch.cat(pred)
+            # print("Prediction after %i times" %n_times, pred.shape)
+            zmin, ymin, xmin = zyx_min
+            zmax, ymax, xmax = zyx_max
+
+        else:
+            pred, zyx_min, zyx_max = predict_patch0(idx, p0, singleCET_dataset, model, N)
+            zmin, ymin, xmin = zyx_min
+            zmax, ymax, xmax = zyx_max
+
         # take mean over predictions and reduce channels
         pred = pred.mean(0).squeeze()
         denoised_tomo[zmin:zmax, ymin:ymax, xmin:xmax] += pred

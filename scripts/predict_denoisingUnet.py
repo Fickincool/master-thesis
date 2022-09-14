@@ -35,6 +35,7 @@ exp_name = sys.argv[2]
 n_bernoulli_samples = args["n_bernoulli_samples_prediction"]
 
 tomo_name = args["tomo_name"]
+resample_patch_each_iter = args["resample_patch_each_iter"]
 
 try:
     version = args["version"]
@@ -101,6 +102,7 @@ elif dataset == "singleCET_FourierDataset":
         cet_path,
         subtomo_length=subtomo_length,
         p=p,
+        # TODO: total number of samples should not depend on n_bernoulli_samples in this case
         n_bernoulli_samples=n_bernoulli_samples,
         volumetric_scale_factor=volumetric_scale_factor,
         Vmask_probability=Vmask_probability,
@@ -130,7 +132,7 @@ print("Predicting full tomogram...")
 
 # this is taking two means: first per bernoulli batches, and then again for each time the model was run
 # total predictions is the inner_range*n_bernoulli_samples
-denoised_tomo = predict_full_tomogram(my_dataset, model, N=100)
+denoised_tomo = predict_full_tomogram(my_dataset, model, resample_patch_each_iter, N=250)
 print("Done!")
 
 plt.figure(figsize=(12, 8))
