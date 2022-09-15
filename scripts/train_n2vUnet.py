@@ -95,6 +95,7 @@ datagen = N2V_DataGenerator()
 # In the 'dims' parameter we specify the order of dimensions in the image files we are reading.
 imgs = datagen.load_imgs([cet_path], dims="ZYX")
 
+# We don't implement clipping nor standarization since N2V applies some preprocessing (normalization)
 # if clip_values:
 #     imgs[0][0, ..., 0] = clip(imgs[0][0, ..., 0])
 # imgs[0][0, ..., 0] = standardize(imgs[0][0, ..., 0])
