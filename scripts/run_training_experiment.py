@@ -48,17 +48,17 @@ import json
 experiment_name = "realBernoulli_dropoutLevel_comparison"
 tomogram_list = [
     "tomoPhantom_model8_noisyGaussPoissVL",
+    "tomoPhantom_model8_noisyGaussPoissL",
+    "tomoPhantom_model8_noisyGaussPoissM",
+    "tomoPhantom_model8_noisyGaussPoissH",
     "tomoPhantom_model14_noisyGaussPoissVL",
-    "tomoPhantom_model16_noisyGaussPoissVL"
-    #     "tomoPhantom_model8_noisyGaussPoissL",
-    #     "tomoPhantom_model8_noisyGaussPoissM",
-    #     "tomoPhantom_model8_noisyGaussPoissH",
-    #     "tomoPhantom_model14_noisyGaussPoissL",
-    #     "tomoPhantom_model14_noisyGaussPoissM",
-    #     "tomoPhantom_model14_noisyGaussPoissH",
-    #     "tomoPhantom_model16_noisyGaussPoissL",
-    #     "tomoPhantom_model16_noisyGaussPoissM",
-    #     "tomoPhantom_model16_noisyGaussPoissH",
+    "tomoPhantom_model14_noisyGaussPoissL",
+    "tomoPhantom_model14_noisyGaussPoissM",
+    "tomoPhantom_model14_noisyGaussPoissH",
+    "tomoPhantom_model16_noisyGaussPoissVL",
+    "tomoPhantom_model16_noisyGaussPoissL",
+    "tomoPhantom_model16_noisyGaussPoissM",
+    "tomoPhantom_model16_noisyGaussPoissH",
 ]
 
 experiment_args = {
