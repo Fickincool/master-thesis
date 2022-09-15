@@ -35,7 +35,12 @@ exp_name = sys.argv[2]
 n_bernoulli_samples = args["n_bernoulli_samples_prediction"]
 
 tomo_name = args["tomo_name"]
-resample_patch_each_iter = args["resample_patch_each_iter"]
+
+try:  # I used this as input to compare results with and without resampling
+    # According to whay I found (Notebook 6.03) resampling is significantly better
+    resample_patch_each_iter = args["resample_patch_each_iter"]
+except KeyError:
+    resample_patch_each_iter = True
 
 try:
     version = args["version"]
@@ -132,7 +137,9 @@ print("Predicting full tomogram...")
 
 # this is taking two means: first per bernoulli batches, and then again for each time the model was run
 # total predictions is the inner_range*n_bernoulli_samples
-denoised_tomo = predict_full_tomogram(my_dataset, model, resample_patch_each_iter, N=250)
+denoised_tomo = predict_full_tomogram(
+    my_dataset, model, resample_patch_each_iter, N=250
+)
 print("Done!")
 
 plt.figure(figsize=(12, 8))
