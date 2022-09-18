@@ -45,54 +45,53 @@ import json
 #     },
 # }
 
-experiment_name = "realBernoulli_dropoutLevel_comparison"
+experiment_name = "fourierBernoulli_dropoutLevel_comparison"
 tomogram_list = [
     "tomoPhantom_model8_noisyGaussPoissVL",
-    "tomoPhantom_model8_noisyGaussPoissL",
-    "tomoPhantom_model8_noisyGaussPoissM",
-    "tomoPhantom_model8_noisyGaussPoissH",
-    "tomoPhantom_model14_noisyGaussPoissVL",
-    "tomoPhantom_model14_noisyGaussPoissL",
-    "tomoPhantom_model14_noisyGaussPoissM",
-    "tomoPhantom_model14_noisyGaussPoissH",
-    "tomoPhantom_model16_noisyGaussPoissVL",
-    "tomoPhantom_model16_noisyGaussPoissL",
-    "tomoPhantom_model16_noisyGaussPoissM",
-    "tomoPhantom_model16_noisyGaussPoissH",
+    # "tomoPhantom_model8_noisyGaussPoissL",
+    # "tomoPhantom_model8_noisyGaussPoissM",
+    # "tomoPhantom_model8_noisyGaussPoissH",
+    # "tomoPhantom_model14_noisyGaussPoissVL",
+    # "tomoPhantom_model14_noisyGaussPoissL",
+    # "tomoPhantom_model14_noisyGaussPoissM",
+    # "tomoPhantom_model14_noisyGaussPoissH",
+    # "tomoPhantom_model16_noisyGaussPoissVL",
+    # "tomoPhantom_model16_noisyGaussPoissL",
+    # "tomoPhantom_model16_noisyGaussPoissM",
+    # "tomoPhantom_model16_noisyGaussPoissH",
 ]
 
+max_epochs = 4
 experiment_args = {
     "e0": {
-        "dataset": "singleCET_dataset",
-        "epochs": 400,
+        "dataset": "singleCET_FourierDataset",
+        "epochs": max_epochs,
         "comment": "Bernoulli",
         "n_bernoulli_samples_prediction": 1,
         "p": 0.1,
     },
     "e1": {
-        "dataset": "singleCET_dataset",
-        "epochs": 400,
+        "dataset": "singleCET_FourierDataset",
+        "epochs": max_epochs,
         "comment": "Bernoulli",
         "n_bernoulli_samples_prediction": 1,
         "p": 0.3,
     },
     "e2": {
-        "dataset": "singleCET_dataset",
-        "epochs": 400,
+        "dataset": "singleCET_FourierDataset",
+        "epochs": max_epochs,
         "comment": "Bernoulli",
         "n_bernoulli_samples_prediction": 1,
         "p": 0.5,
     },
     "e3": {
-        "dataset": "singleCET_dataset",
-        "epochs": 400,
+        "dataset": "singleCET_FourierDataset",
+        "epochs": max_epochs,
         "comment": "Bernoulli",
         "n_bernoulli_samples_prediction": 1,
         "p": 0.7,
     },
 }
-
-max_epochs = 400
 
 experiment_logdir = "/home/ubuntu/Thesis/data/S2SDenoising/experiment_args"
 
