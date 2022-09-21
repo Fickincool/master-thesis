@@ -33,6 +33,7 @@ args = json.loads(sys.argv[1])
 exp_name = sys.argv[2]
 
 n_bernoulli_samples = args["n_bernoulli_samples_prediction"]
+total_samples = args["total_samples_prediction"]
 
 tomo_name = args["tomo_name"]
 
@@ -67,8 +68,8 @@ with open(os.path.join(logdir, "experiment_args.json"), "r") as f:
 deconv_kwargs = exp_args["deconv_kwargs"]
 predict_simRecon = exp_args["predict_simRecon"]
 use_deconv_as_target = exp_args["use_deconv_as_target"]
-weightedBernoulliMask_prob = parse_null_arg(
-    exp_args["weightedBernoulliMask_prob"], float
+bernoulliMask_prob = parse_null_arg(
+    exp_args["bernoulliMask_prob"], float
 )
 
 print("Loading model from: %s" % logdir)
@@ -107,15 +108,15 @@ elif dataset == "singleCET_FourierDataset":
         cet_path,
         subtomo_length=subtomo_length,
         p=p,
-        # TODO: total number of samples should not depend on n_bernoulli_samples in this case
         n_bernoulli_samples=n_bernoulli_samples,
+        total_samples=total_samples,
         volumetric_scale_factor=volumetric_scale_factor,
         Vmask_probability=Vmask_probability,
         Vmask_pct=Vmask_pct,
         transform=None,
         n_shift=0,
         gt_tomo_path=gt_cet_path,
-        weightedBernoulliMask_prob=weightedBernoulliMask_prob,
+        bernoulliMask_prob=bernoulliMask_prob,
         **deconv_kwargs
     )
 

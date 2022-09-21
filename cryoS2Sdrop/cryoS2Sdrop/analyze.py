@@ -101,23 +101,26 @@ def get_metrics(tomo_path, gt_tomo_path, use_deconv_data, clip_values):
 
 def parse_noise_level(x):
     if x is not None:
-        if "Perlin" not in x:
-            x = x.split("_")[-1].replace(".mrc", "")
-            label_to_var = {"VL": 0.2, "L": 0.5, "M": 1, "H": 5}
-            for k in label_to_var.keys():
-                if k in x:
-                    return "Gauss(%.1f) + Poisson" % label_to_var[k]
-        else:
-            x = x.split("noisy")[-1].replace(".mrc", "")
-            label_to_var = {
-                "VL_Perlin": 0.2,
-                "L_Perlin": 0.5,
-                "M_Perlin": 1,
-                "H_Perlin": 5,
-            }
-            for k in label_to_var.keys():
-                if k in x:
-                    return "Gauss(%.1f) + Poisson + Perlin" % label_to_var[k]
+        if "tomoPhantom" in x:
+            if "Perlin" not in x:
+                x = x.split("_")[-1].replace(".mrc", "")
+                label_to_var = {"VL": 0.2, "L": 0.5, "M": 1, "H": 5}
+                for k in label_to_var.keys():
+                    if k in x:
+                        return "Gauss(%.1f) + Poisson" % label_to_var[k]
+            elif "Perlin" in x:
+                x = x.split("noisy")[-1].replace(".mrc", "")
+                label_to_var = {
+                    "VL_Perlin": 0.2,
+                    "L_Perlin": 0.5,
+                    "M_Perlin": 1,
+                    "H_Perlin": 5,
+                }
+                for k in label_to_var.keys():
+                    if k in x:
+                        return "Gauss(%.1f) + Poisson + Perlin" % label_to_var[k]
+        elif "shrec" in x:
+            return "other"
     else:
         pass
 
