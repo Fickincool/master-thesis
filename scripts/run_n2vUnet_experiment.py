@@ -5,17 +5,17 @@ import json
 experiment_name = "n2vBaseline"
 tomogram_list = [
     "tomoPhantom_model8_noisyGaussPoissVL",
-    # "tomoPhantom_model14_noisyGaussPoissVL",
-    # "tomoPhantom_model16_noisyGaussPoissVL"
-    #     "tomoPhantom_model8_noisyGaussPoissL",
-    #     "tomoPhantom_model8_noisyGaussPoissM",
-    #     "tomoPhantom_model8_noisyGaussPoissH",
-    #     "tomoPhantom_model14_noisyGaussPoissL",
-    #     "tomoPhantom_model14_noisyGaussPoissM",
-    #     "tomoPhantom_model14_noisyGaussPoissH",
-    #     "tomoPhantom_model16_noisyGaussPoissL",
-    #     "tomoPhantom_model16_noisyGaussPoissM",
-    #     "tomoPhantom_model16_noisyGaussPoissH",
+    "tomoPhantom_model14_noisyGaussPoissVL",
+    "tomoPhantom_model16_noisyGaussPoissVL",
+    "tomoPhantom_model8_noisyGaussPoissL",
+    "tomoPhantom_model8_noisyGaussPoissM",
+    "tomoPhantom_model8_noisyGaussPoissH",
+    "tomoPhantom_model14_noisyGaussPoissL",
+    "tomoPhantom_model14_noisyGaussPoissM",
+    "tomoPhantom_model14_noisyGaussPoissH",
+    "tomoPhantom_model16_noisyGaussPoissL",
+    "tomoPhantom_model16_noisyGaussPoissM",
+    "tomoPhantom_model16_noisyGaussPoissH",
 ]
 max_epochs = 400
 experiment_args = {"e0": {"epochs": max_epochs}}
