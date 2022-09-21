@@ -12,6 +12,7 @@ import json
 #     "deconvstrength": 1,
 #     "highpassnyquist": 0.02,
 # }
+# max_epochs = 400
 # experiment_args = {
 #     "e0": {
 #         "dataset": "singleCET_dataset",
@@ -45,54 +46,98 @@ import json
 #     },
 # }
 
-experiment_name = "realBernoulli_dropoutLevel_comparison"
+# experiment_name = "fourierBernoulli_dropoutLevel_comparison"
+# tomogram_list = [
+#     "tomoPhantom_model8_noisyGaussPoissVL",
+#     "tomoPhantom_model8_noisyGaussPoissL",
+#     "tomoPhantom_model8_noisyGaussPoissM",
+#     "tomoPhantom_model8_noisyGaussPoissH",
+#     "tomoPhantom_model14_noisyGaussPoissVL",
+#     "tomoPhantom_model14_noisyGaussPoissL",
+#     "tomoPhantom_model14_noisyGaussPoissM",
+#     "tomoPhantom_model14_noisyGaussPoissH",
+#     # "tomoPhantom_model16_noisyGaussPoissVL",
+#     # "tomoPhantom_model16_noisyGaussPoissL",
+#     # "tomoPhantom_model16_noisyGaussPoissM",
+#     # "tomoPhantom_model16_noisyGaussPoissH",
+# ]
+
+# max_epochs = 400
+# experiment_args = {
+#     "e0": {
+#         "dataset": "singleCET_FourierDataset",
+#         "epochs": max_epochs,
+#         "comment": "Bernoulli",
+#         "n_bernoulli_samples_prediction": 1,
+#         "p": 0.1,
+#     },
+#     "e1": {
+#         "dataset": "singleCET_FourierDataset",
+#         "epochs": max_epochs,
+#         "comment": "Bernoulli",
+#         "n_bernoulli_samples_prediction": 1,
+#         "p": 0.3,
+#     },
+#     "e2": {
+#         "dataset": "singleCET_FourierDataset",
+#         "epochs": max_epochs,
+#         "comment": "Bernoulli",
+#         "n_bernoulli_samples_prediction": 1,
+#         "p": 0.5,
+#     },
+#     "e3": {
+#         "dataset": "singleCET_FourierDataset",
+#         "epochs": max_epochs,
+#         "comment": "Bernoulli",
+#         "n_bernoulli_samples_prediction": 1,
+#         "p": 0.7,
+#     },
+# }
+
+
+experiment_name = "fourierHighFreqMask_comparison"
 tomogram_list = [
     "tomoPhantom_model8_noisyGaussPoissVL",
     "tomoPhantom_model8_noisyGaussPoissL",
     "tomoPhantom_model8_noisyGaussPoissM",
     "tomoPhantom_model8_noisyGaussPoissH",
-    "tomoPhantom_model14_noisyGaussPoissVL",
-    "tomoPhantom_model14_noisyGaussPoissL",
-    "tomoPhantom_model14_noisyGaussPoissM",
-    "tomoPhantom_model14_noisyGaussPoissH",
-    "tomoPhantom_model16_noisyGaussPoissVL",
-    "tomoPhantom_model16_noisyGaussPoissL",
-    "tomoPhantom_model16_noisyGaussPoissM",
-    "tomoPhantom_model16_noisyGaussPoissH",
+    # "tomoPhantom_model14_noisyGaussPoissVL",
+    # "tomoPhantom_model14_noisyGaussPoissL",
+    # "tomoPhantom_model14_noisyGaussPoissM",
+    # "tomoPhantom_model14_noisyGaussPoissH",
+    # "tomoPhantom_model16_noisyGaussPoissVL",
+    # "tomoPhantom_model16_noisyGaussPoissL",
+    # "tomoPhantom_model16_noisyGaussPoissM",
+    # "tomoPhantom_model16_noisyGaussPoissH",
 ]
 
+max_epochs = 10
 experiment_args = {
     "e0": {
-        "dataset": "singleCET_dataset",
-        "epochs": 400,
-        "comment": "Bernoulli",
-        "n_bernoulli_samples_prediction": 1,
-        "p": 0.1,
+        "dataset": "singleCET_FourierDataset",
+        "epochs": max_epochs,
+        "p":0.7,
+        "bernoulliMask_prob": 0,
+        "comment": "Fourier with hiFreqMask=1",
+        "input_as_target": False,
     },
     "e1": {
-        "dataset": "singleCET_dataset",
-        "epochs": 400,
-        "comment": "Bernoulli",
-        "n_bernoulli_samples_prediction": 1,
-        "p": 0.3,
+        "dataset": "singleCET_FourierDataset",
+        "epochs": max_epochs,
+        "p":0.7,
+        "bernoulliMask_prob": 0.3,
+        "comment": "Fourier with hiFreqMask=0.7",
+        "input_as_target": False,
     },
     "e2": {
-        "dataset": "singleCET_dataset",
-        "epochs": 400,
-        "comment": "Bernoulli",
-        "n_bernoulli_samples_prediction": 1,
-        "p": 0.5,
-    },
-    "e3": {
-        "dataset": "singleCET_dataset",
-        "epochs": 400,
-        "comment": "Bernoulli",
-        "n_bernoulli_samples_prediction": 1,
-        "p": 0.7,
+        "dataset": "singleCET_FourierDataset",
+        "epochs": max_epochs,
+        "p":0.7,
+        "bernoulliMask_prob": 0.5,
+        "comment": "Fourier with hiFreqMask=0.5",
+        "input_as_target": False,
     },
 }
-
-max_epochs = 400
 
 experiment_logdir = "/home/ubuntu/Thesis/data/S2SDenoising/experiment_args"
 
@@ -101,7 +146,9 @@ default_args = {
     "p": 0.3,  # bernoulli masking AND dropout probabilities
     "alpha": 0,
     "n_bernoulli_samples": 6,
-    "n_bernoulli_samples_prediction": 6,
+    "total_samples": 100,
+    "total_samples_prediction": 150,
+    "n_bernoulli_samples_prediction": 1,
     "volumetric_scale_factor": 4,
     "Vmask_probability": 0,
     "Vmask_pct": 0.3,
@@ -116,7 +163,7 @@ default_args = {
     "deconv_kwargs": {},
     "use_deconv_as_target": None,
     "comment": None,
-    "weightedBernoulliMask_prob": 0,
+    "bernoulliMask_prob": 1,
     "input_as_target": None,
 }
 
