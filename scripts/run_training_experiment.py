@@ -95,49 +95,97 @@ import json
 # }
 
 
-experiment_name = "fourierHighFreqMask_comparison"
+experiment_name = "fourierBernoulli_dropoutLevel_comparison"
 tomogram_list = [
-    "tomoPhantom_model8_noisyGaussPoissVL",
-    "tomoPhantom_model8_noisyGaussPoissL",
-    "tomoPhantom_model8_noisyGaussPoissM",
-    "tomoPhantom_model8_noisyGaussPoissH",
-    # "tomoPhantom_model14_noisyGaussPoissVL",
-    # "tomoPhantom_model14_noisyGaussPoissL",
-    # "tomoPhantom_model14_noisyGaussPoissM",
-    # "tomoPhantom_model14_noisyGaussPoissH",
-    # "tomoPhantom_model16_noisyGaussPoissVL",
-    # "tomoPhantom_model16_noisyGaussPoissL",
-    # "tomoPhantom_model16_noisyGaussPoissM",
-    # "tomoPhantom_model16_noisyGaussPoissH",
-]
-
-max_epochs = 10
+    # "shrec2021_model4_dummy", 
+    "shrec2021_model2_dummy"
+    ]
+# SHREC21 deconv args
+deconv_kwargs = {
+    "angpix": 10,
+    "defocus": 0,
+    "snrfalloff": 0.3,
+    "deconvstrength": 1,
+    "highpassnyquist": 0.02,
+}
+max_epochs = 400
 experiment_args = {
     "e0": {
         "dataset": "singleCET_FourierDataset",
         "epochs": max_epochs,
-        "p":0.7,
-        "bernoulliMask_prob": 0,
-        "comment": "Fourier with hiFreqMask=1",
-        "input_as_target": False,
+        "comment": "Fourier Bernoulli",
+        "n_bernoulli_samples_prediction": 1,
+        "p": 0.3,
     },
     "e1": {
         "dataset": "singleCET_FourierDataset",
         "epochs": max_epochs,
-        "p":0.7,
-        "bernoulliMask_prob": 0.3,
-        "comment": "Fourier with hiFreqMask=0.7",
-        "input_as_target": False,
+        "comment": "Fourier Bernoulli",
+        "n_bernoulli_samples_prediction": 1,
+        "p": 0.3,
+        "deconv_kwargs": deconv_kwargs,
     },
     "e2": {
         "dataset": "singleCET_FourierDataset",
         "epochs": max_epochs,
-        "p":0.7,
-        "bernoulliMask_prob": 0.5,
-        "comment": "Fourier with hiFreqMask=0.5",
-        "input_as_target": False,
+        "comment": "Fourier Bernoulli",
+        "n_bernoulli_samples_prediction": 1,
+        "p": 0.7,
+    },
+    "e3": {
+        "dataset": "singleCET_FourierDataset",
+        "epochs": max_epochs,
+        "comment": "Fourier Bernoulli",
+        "n_bernoulli_samples_prediction": 1,
+        "p": 0.7,
+        "deconv_kwargs": deconv_kwargs,
     },
 }
+
+
+# experiment_name = "fourierHighFreqMask_comparison"
+# tomogram_list = [
+#     # "tomoPhantom_model8_noisyGaussPoissVL",
+#     # "tomoPhantom_model8_noisyGaussPoissL",
+#     # "tomoPhantom_model8_noisyGaussPoissM",
+#     # "tomoPhantom_model8_noisyGaussPoissH",
+#     # "tomoPhantom_model14_noisyGaussPoissVL",
+#     # "tomoPhantom_model14_noisyGaussPoissL",
+#     "tomoPhantom_model14_noisyGaussPoissM",
+#     "tomoPhantom_model14_noisyGaussPoissH",
+#     "tomoPhantom_model16_noisyGaussPoissVL",
+#     "tomoPhantom_model16_noisyGaussPoissL",
+#     "tomoPhantom_model16_noisyGaussPoissM",
+#     "tomoPhantom_model16_noisyGaussPoissH",
+# ]
+
+# max_epochs = 400
+# experiment_args = {
+#     "e0": {
+#         "dataset": "singleCET_FourierDataset",
+#         "epochs": max_epochs,
+#         "p":0.7,
+#         "bernoulliMask_prob": 0,
+#         "comment": "Fourier with hiFreqMask=1",
+#         "input_as_target": False,
+#     },
+#     "e1": {
+#         "dataset": "singleCET_FourierDataset",
+#         "epochs": max_epochs,
+#         "p":0.7,
+#         "bernoulliMask_prob": 0.3,
+#         "comment": "Fourier with hiFreqMask=0.7",
+#         "input_as_target": False,
+#     },
+#     "e2": {
+#         "dataset": "singleCET_FourierDataset",
+#         "epochs": max_epochs,
+#         "p":0.7,
+#         "bernoulliMask_prob": 0.5,
+#         "comment": "Fourier with hiFreqMask=0.5",
+#         "input_as_target": False,
+#     },
+# }
 
 experiment_logdir = "/home/ubuntu/Thesis/data/S2SDenoising/experiment_args"
 
@@ -184,6 +232,7 @@ if __name__ == "__main__":
     for tomo_name in tomogram_list:
         for exp in experiment_args:
             args = default_args.copy()
+            
             args["tomo_name"] = tomo_name
             # the new args is the dictionary of the experiment arguments
             new_args = experiment_args[exp]
