@@ -253,7 +253,10 @@ def logdir_to_dataframe(logdir, clip_values, ignore_deconv=True):
 
     data_log["noise_level"] = data_log.tomo_path.map(lambda x: parse_noise_level(x))
 
-    data_log = parse_pred_tomo_path(data_log)
+    try:
+        data_log = parse_pred_tomo_path(data_log)
+    except AttributeError:
+        pass
 
     return data_log
 
