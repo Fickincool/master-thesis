@@ -34,11 +34,11 @@ dependencies:
   - brotlipy=0.7.0=py39h27cfd23_1003
   - bzip2=1.0.8=h7b6447c_0
   - c-ares=1.18.1=h7f8727e_0
-  - ca-certificates=2022.6.15=ha878542_0
+  - ca-certificates=2022.07.19=h06a4308_0
   - cached-property=1.5.2=py_0
   - cached_property=1.5.2=pyha770c72_1
   - cachetools=4.2.2=pyhd3eb1b0_0
-  - certifi=2022.6.15=py39hf3d152e_0
+  - certifi=2022.6.15=py39h06a4308_0
   - cffi=1.15.0=py39hd667e15_1
   - charset-normalizer=2.0.4=pyhd3eb1b0_0
   - click=8.0.4=py39h06a4308_0
@@ -183,7 +183,7 @@ dependencies:
   - openh264=2.1.1=h4ff587b_0
   - openjpeg=2.4.0=h3ad879b_0
   - openpyxl=3.0.9=pyhd3eb1b0_0
-  - openssl=1.1.1o=h7f8727e_0
+  - openssl=1.1.1q=h7f8727e_0
   - packaging=21.3=pyhd3eb1b0_0
   - pandas=1.4.2=py39h295c915_0
   - pandoc=2.12=h06a4308_0
@@ -235,6 +235,7 @@ dependencies:
   - scikit-image=0.19.2=py39h51133e4_0
   - scikit-learn=1.0.2=py39h51133e4_1
   - scipy=1.5.3=py39hee8e79c_0
+  - seaborn=0.11.2=pyhd3eb1b0_0
   - send2trash=1.8.0=pyhd3eb1b0_1
   - setuptools=59.5.0=py39hf3d152e_0
   - simpleitk=2.1.1=py39h3fd9d12_0
@@ -255,6 +256,7 @@ dependencies:
   - tk=8.6.11=h1ccaba5_0
   - toml=0.10.2=pyhd3eb1b0_0
   - tomli=1.2.2=pyhd3eb1b0_0
+  - tomopy=1.11.0=py39h10ffb3b_101
   - toolz=0.11.2=pyhd3eb1b0_0
   - torchaudio=0.12.0=py39_cu113
   - torchinfo=1.7.0=pyhd8ed1ab_0
@@ -295,6 +297,7 @@ dependencies:
     - filelock==3.7.0
     - gdown==4.4.0
     - numpy-stl==2.17.1
+    - pyfastnoisesimd==0.4.2
     - python-utils==3.2.3
     - pytorch-msssim==0.2.1
     - pywavefront==1.3.3
