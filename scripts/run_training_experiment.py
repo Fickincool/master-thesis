@@ -101,8 +101,8 @@ tomogram_list = [
     "tomoPhantom_model8_noisyGaussPoissL",
     "tomoPhantom_model8_noisyGaussPoissM",
     "tomoPhantom_model8_noisyGaussPoissH",
-    # "tomoPhantom_model14_noisyGaussPoissVL",
-    # "tomoPhantom_model14_noisyGaussPoissL",
+    "tomoPhantom_model14_noisyGaussPoissVL",
+    "tomoPhantom_model14_noisyGaussPoissL",
     # "tomoPhantom_model14_noisyGaussPoissM",
     # "tomoPhantom_model14_noisyGaussPoissH",
     # "tomoPhantom_model16_noisyGaussPoissVL",
@@ -111,7 +111,7 @@ tomogram_list = [
     # "tomoPhantom_model16_noisyGaussPoissH",
 ]
 
-max_epochs = 10
+max_epochs = 400
 experiment_args = {
     "e0": {
         "dataset": "singleCET_FourierDataset",
