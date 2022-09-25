@@ -2,24 +2,27 @@ import os
 import json
 
 tomophantom_dict = {
-    "model8":["tomoPhantom_model8_noisyGaussPoissVL",
-    "tomoPhantom_model8_noisyGaussPoissL",
-    "tomoPhantom_model8_noisyGaussPoissM",
-    "tomoPhantom_model8_noisyGaussPoissH"],
-    "model14": ["tomoPhantom_model14_noisyGaussPoissVL",
-    "tomoPhantom_model14_noisyGaussPoissL",
-    "tomoPhantom_model14_noisyGaussPoissM",
-    "tomoPhantom_model14_noisyGaussPoissH"],
-    "model16": ["tomoPhantom_model16_noisyGaussPoissVL",
-    "tomoPhantom_model16_noisyGaussPoissL",
-    "tomoPhantom_model16_noisyGaussPoissM",
-    "tomoPhantom_model16_noisyGaussPoissH"]
+    "model8": [
+        "tomoPhantom_model8_noisyGaussPoissVL",
+        "tomoPhantom_model8_noisyGaussPoissL",
+        "tomoPhantom_model8_noisyGaussPoissM",
+        "tomoPhantom_model8_noisyGaussPoissH",
+    ],
+    "model14": [
+        "tomoPhantom_model14_noisyGaussPoissVL",
+        "tomoPhantom_model14_noisyGaussPoissL",
+        "tomoPhantom_model14_noisyGaussPoissM",
+        "tomoPhantom_model14_noisyGaussPoissH",
+    ],
+    "model16": [
+        "tomoPhantom_model16_noisyGaussPoissVL",
+        "tomoPhantom_model16_noisyGaussPoissL",
+        "tomoPhantom_model16_noisyGaussPoissM",
+        "tomoPhantom_model16_noisyGaussPoissH",
+    ],
 }
 
-shrec_list = [
-    "shrec2021_model4_dummy", 
-    "shrec2021_model2_dummy"
-]
+shrec_list = ["shrec2021_model4_dummy", "shrec2021_model2_dummy"]
 
 """ experiment_name = "realBernoulli_convolved_comparison"
 tomogram_list = ["shrec2021_model4_dummy", "shrec2021_model2_dummy"]
@@ -124,65 +127,44 @@ experiment_args = {
 # }
  """
 
-""" # experiment_name = "fourierHighFreqMask_comparison"
-# tomogram_list = [
-#     "tomoPhantom_model8_noisyGaussPoissVL",
-#     "tomoPhantom_model8_noisyGaussPoissL",
-#     "tomoPhantom_model8_noisyGaussPoissM",
-#     "tomoPhantom_model8_noisyGaussPoissH",
-#     "tomoPhantom_model14_noisyGaussPoissVL",
-#     "tomoPhantom_model14_noisyGaussPoissL",
-#     # "tomoPhantom_model14_noisyGaussPoissM",
-#     # "tomoPhantom_model14_noisyGaussPoissH",
-#     # "tomoPhantom_model16_noisyGaussPoissVL",
-#     # "tomoPhantom_model16_noisyGaussPoissL",
-#     # "tomoPhantom_model16_noisyGaussPoissM",
-#     # "tomoPhantom_model16_noisyGaussPoissH",
-# ]
+""" experiment_name = "fourierHighFreqMask_comparison"
+tomogram_list = tomophantom_dict["model8"]
 
-# max_epochs = 400
-# experiment_args = {
-#     "e0": {
-#         "dataset": "singleCET_FourierDataset",
-#         "epochs": max_epochs,
-#         "p":0.7,
-#         "bernoulliMask_prob": 0,
-#         "comment": "Fourier with hiFreqMask=1",
-#         "input_as_target": False,
-#     },
-#     "e1": {
-#         "dataset": "singleCET_FourierDataset",
-#         "epochs": max_epochs,
-#         "p":0.7,
-#         "bernoulliMask_prob": 0.3,
-#         "comment": "Fourier with hiFreqMask=0.7",
-#         "input_as_target": False,
-#     },
-#     "e2": {
-#         "dataset": "singleCET_FourierDataset",
-#         "epochs": max_epochs,
-#         "p":0.7,
-#         "bernoulliMask_prob": 0.5,
-#         "comment": "Fourier with hiFreqMask=0.5",
-#         "input_as_target": False,
-#     },
-# } """
-
-""" experiment_name = "fourierBernoulli_dropoutLevel_comparison"
-tomogram_list = [
-    # "shrec2021_model4_dummy", 
-    "shrec2021_model2_dummy"
-    ]
-# SHREC21 deconv args
-deconv_kwargs = {
-    "angpix": 10,
-    "defocus": 0,
-    "snrfalloff": 0.3,
-    "deconvstrength": 1,
-    "highpassnyquist": 0.02,
-}
-
-max_epochs = 400 """
+max_epochs = 400
+experiment_args = {
+    # "e0": {
+    #     "dataset": "singleCET_FourierDataset",
+    #     "epochs": max_epochs,
+    #     "p":0.7,
+    #     "bernoulliMask_prob": 0,
+    #     "comment": "Fourier with hiFreqMask=1",
+    #     "input_as_target": False,
+    # },
+    # "e1": {
+    #     "dataset": "singleCET_FourierDataset",
+    #     "epochs": max_epochs,
+    #     "p":0.7,
+    #     "bernoulliMask_prob": 0.3,
+    #     "comment": "Fourier with hiFreqMask=0.7",
+    #     "input_as_target": False,
+    # },
+    # "e2": {
+    #     "dataset": "singleCET_FourierDataset",
+    #     "epochs": max_epochs,
+    #     "p":0.7,
+    #     "bernoulliMask_prob": 0.5,
+    #     "comment": "Fourier with hiFreqMask=0.5",
+    #     "input_as_target": False,
+    # },
+    "e3": {
+        "dataset": "singleCET_FourierDataset",
+        "epochs": max_epochs,
+        "p": 0,
+        "bernoulliMask_prob": 0,
+        "comment": "Fourier with hiFreqMask=1, no dropout",
+        "input_as_target": False,
+    },
+} """
 
 """ experiment_name = "realBernoulli_volMask_comparison"
 
@@ -220,38 +202,48 @@ experiment_args = {
     },
 } """
 
-""" experiment_name = "realBernoulli_volMask_comparison"
+""" experiment_name = "fourierBernoulliVolMask_dropoutLevel_comparison"
+tomogram_list = tomophantom_dict["model8"]
 
-tomogram_list = [shrec_list[0]]
-
-# SHREC21 deconv args
-deconv_kwargs = {
-    "angpix": 10,
-    "defocus": 0,
-    "snrfalloff": 0.3,
-    "deconvstrength": 1,
-    "highpassnyquist": 0.02,
-}
 max_epochs = 400
-
 experiment_args = {
     "e0": {
-        "dataset": "singleCET_dataset",
+        "dataset": "singleCET_FourierDataset",
         "epochs": max_epochs,
-        "p":0.3,
-        "comment": "Volumetric mask(0.3) with prob=1",
-        "Vmask_probability": 1,
+        "comment": "Fourier Bernoulli w/ volMask. p = 0.3",
+        "n_bernoulli_samples_prediction": 1,
+        "p": 0.3,
+        "volumetric_scale_factor": 8,
     },
     "e1": {
-        "dataset": "singleCET_dataset",
+        "dataset": "singleCET_FourierDataset",
         "epochs": max_epochs,
-        "p":0.3,
-        "comment": "Volumetric mask(0.3) with prob=0.5",
-        "Vmask_probability": 0.5,
+        "comment": "Fourier Bernoulli w/ volMask. p = 0.5",
+        "n_bernoulli_samples_prediction": 1,
+        "p": 0.5,
+        "volumetric_scale_factor": 8,
+    },
+    "e2": {
+        "dataset": "singleCET_FourierDataset",
+        "epochs": max_epochs,
+        "comment": "Bernoulli",
+        "comment": "Fourier Bernoulli w/ volMask. p = 0.7",
+        "n_bernoulli_samples_prediction": 1,
+        "p": 0.7,
+        "volumetric_scale_factor": 8,
+    },
+    "e3": {
+        "dataset": "singleCET_FourierDataset",
+        "epochs": max_epochs,
+        "comment": "Fourier Bernoulli w/ volMask. p = 0.8",
+        "n_bernoulli_samples_prediction": 1,
+        "p": 0.8,
+        "volumetric_scale_factor": 8,
     },
 } """
 
-experiment_name = "fourierHighFreqMask_comparison"
+
+experiment_name = "fourierHFplusVolMask_comparison"
 tomogram_list = [shrec_list[1], "tomo04_dummy"]
 
 max_epochs = 400
@@ -259,17 +251,17 @@ experiment_args = {
     "e0": {
         "dataset": "singleCET_FourierDataset",
         "epochs": max_epochs,
-        "p":0.3,
+        "p": 0.3,
         "bernoulliMask_prob": 0,
-        "comment": "Fourier with hiFreqMask=1",
+        "comment": "Fourier with mixed Mask",
         "input_as_target": False,
     },
     "e1": {
         "dataset": "singleCET_FourierDataset",
         "epochs": max_epochs,
-        "p":0.5,
+        "p": 0.5,
         "bernoulliMask_prob": 0,
-        "comment": "Fourier with hiFreqMask=1",
+        "comment": "Fourier with mixed Mask",
         "input_as_target": False,
     },
 }
@@ -320,7 +312,6 @@ if __name__ == "__main__":
     for tomo_name in tomogram_list:
         for exp in experiment_args:
             args = default_args.copy()
-            
             args["tomo_name"] = tomo_name
             # the new args is the dictionary of the experiment arguments
             new_args = experiment_args[exp]

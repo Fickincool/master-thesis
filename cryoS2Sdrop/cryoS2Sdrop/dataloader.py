@@ -268,7 +268,7 @@ class singleCET_FourierDataset(singleCET_dataset):
         total_samples=100,
         volumetric_scale_factor=4,
         Vmask_probability=0,
-        Vmask_pct=0.1,
+        Vmask_pct=0.1,  # deprecated, we use p
         transform=None,
         n_shift=0,
         gt_tomo_path=None,
@@ -297,7 +297,7 @@ class singleCET_FourierDataset(singleCET_dataset):
             n_bernoulli_samples,
             volumetric_scale_factor,
             Vmask_probability,
-            Vmask_pct,
+            p,
             transform,
             n_shift,
             gt_tomo_path,
@@ -323,17 +323,16 @@ class singleCET_FourierDataset(singleCET_dataset):
 
         return
 
-
     def make_shell(self, inner_radius, outer_radius, tomo_shape):
         """
         Creates a (3D) shell with given inner_radius and delta_r width centered at the middle of the array.
-        
+
         """
 
         length = min(tomo_shape)
-        if length%2==1:
-            length = length-1
-            
+        if length % 2 == 1:
+            length = length - 1
+
         mask_shape = len(tomo_shape) * [length]
         _shell_mask = np.zeros(mask_shape)
 
@@ -341,7 +340,7 @@ class singleCET_FourierDataset(singleCET_dataset):
         for z in range(0, outer_radius + 1):
             for y in range(0, outer_radius + 1):
                 for x in range(0, outer_radius + 1):
-                    
+
                     r = np.linalg.norm([z, y, x])
 
                     if r >= inner_radius and r < outer_radius:
@@ -350,33 +349,34 @@ class singleCET_FourierDataset(singleCET_dataset):
                         xidx = x + length // 2
 
                         _shell_mask[zidx, yidx, xidx] = 1
-        
+
         aux = (
             np.rot90(_shell_mask, axes=(0, 1))
             + np.rot90(_shell_mask, 2, axes=(0, 1))
             + np.rot90(_shell_mask, 3, axes=(0, 1))
         )
 
-        _shell_mask = _shell_mask + aux # this is half the volume
+        _shell_mask = _shell_mask + aux  # this is half the volume
 
-        aux = np.rot90(_shell_mask, 2, axes=(1, 2)) # rotate again 180º to get full volume
+        aux = np.rot90(
+            _shell_mask, 2, axes=(1, 2)
+        )  # rotate again 180º to get full volume
 
         aux2 = _shell_mask + aux
-        
+
         if inner_radius == 0:
-            vol = 4/3 * np.pi * outer_radius**3
-            pct_diff = (vol - aux2.sum())/vol
-            if pct_diff>0.1:
+            vol = 4 / 3 * np.pi * outer_radius**3
+            pct_diff = (vol - aux2.sum()) / vol
+            if pct_diff > 0.1:
                 print(pct_diff)
                 raise ValueError("Sanity check for sphere volume not passed")
-        
 
         # finally, fill the actual shape of the tomogram with the mask
         shell_mask = np.zeros(tomo_shape)
         shell_mask[
             (tomo_shape[0] - length) // 2 : (tomo_shape[0] + length) // 2,
             (tomo_shape[1] - length) // 2 : (tomo_shape[1] + length) // 2,
-            (tomo_shape[2] - length) // 2 : (tomo_shape[2] + length) // 2
+            (tomo_shape[2] - length) // 2 : (tomo_shape[2] + length) // 2,
         ] = aux2
 
         return shell_mask
@@ -386,13 +386,20 @@ class singleCET_FourierDataset(singleCET_dataset):
         downsampled_shape = np.array(self.tomoF_shape) // self.vol_scale_factor
         downsampled_shape = tuple(downsampled_shape)
 
-        # we allow power correction here: not multiplying by (1-p)
-        bernoulli_Vmask = self.dropoutV(torch.ones(downsampled_shape))
+        bernoulli_Vmask = self.dropoutV(torch.ones(downsampled_shape)) * (
+            1 - self.Vmask_pct
+        )
         bernoulli_Vmask = bernoulli_Vmask.unsqueeze(0).unsqueeze(0)
         bernoulli_Vmask = self.upsample(bernoulli_Vmask)
         extra_row = bernoulli_Vmask[..., -1].unsqueeze(-1)
         # make final shape [C, S, S, S] last row is to account for Nyquist Frequency
         bernoulli_Vmask = torch.cat([bernoulli_Vmask, extra_row], dim=-1).squeeze(0)
+
+        # adjust for uneven sizes on dimension 0
+        diff0 = self.tomoF_shape[0] - bernoulli_Vmask.shape[1]
+        if (diff0 > 0) and (diff0 < self.vol_scale_factor):
+            extra_row = bernoulli_Vmask[:, 0:diff0, ...]
+            bernoulli_Vmask = torch.cat([extra_row, bernoulli_Vmask], dim=1)
 
         if bernoulli_Vmask[0, ...].shape != self.dataF.shape:
             raise ValueError(
@@ -407,14 +414,16 @@ class singleCET_FourierDataset(singleCET_dataset):
         inner = 0
         # outer radius cannot be bigger than half of the tomo's smallest dimension
         min_length = min(self.tomo_shape)
-        outer = np.random.randint(int(0.2*min_length//2), int(0.8*min_length//2))
+        outer = np.random.randint(
+            int(0.1 * min_length // 2), int(0.8 * min_length // 2)
+        )
 
         shell_mask = self.make_shell(inner, outer, self.tomo_shape)
         shell_mask = torch.tensor(shell_mask)
         # make shell correspond to the unshifted spectrum
         shell_mask = torch.fft.ifftshift(shell_mask)
         # make it correspond to only real part of spectrum
-        shell_mask = shell_mask[..., 0:self.tomoF_shape[-1]]
+        shell_mask = shell_mask[..., 0 : self.tomoF_shape[-1]]
 
         return shell_mask.float().unsqueeze(0)
 
@@ -422,19 +431,24 @@ class singleCET_FourierDataset(singleCET_dataset):
         "Create pointed blind spot random mask"
         _shape = self.tomoF_shape
         # we allow power correction here: not multiplying by (1-p)
-        bernoulli_Pmask = self.dropout(torch.ones(_shape))
+        bernoulli_Pmask = self.dropout(torch.ones(_shape)) * (1 - self.p)
         bernoulli_Pmask = bernoulli_Pmask.unsqueeze(0)
 
         return bernoulli_Pmask
 
     def create_mask(self):
         "Create a mask choosing between Bernoulli and other type. Could be volumetric of highFreq."
-        otherMask_prob = 1-self.bernoulliMask_prob
+        # otherMask_prob = 1 - self.bernoulliMask_prob
 
-        if np.random.uniform() < otherMask_prob:
-            mask = self.create_hiFreqMask()
-        else:
-            mask = self.create_Pmask()
+        # if np.random.uniform() < otherMask_prob:
+        #     mask = self.create_hiFreqMask()
+        # else:
+        #     mask = self.create_Pmask()
+
+        mask = self.create_hiFreqMask() + self.create_Vmask()
+        mask = torch.where(mask > 1, 1, mask)
+
+        assert len(mask.unique()) == 2
 
         return mask
 
