@@ -3,34 +3,41 @@ import json
 
 
 ################### SETUP ############################################
-experiment_name = "realBernoulli_dropoutLevel_comparison"
+experiment_name = "realBernoulli_volMask_comparison"
 # tomogram_list = [
 #     "shrec2021_model4_dummy",
 #     "shrec2021_model2_dummy"
 # ]
 
 tomogram_list = [
+    "tomoPhantom_model8_noisyGaussPoissVL"
     # "tomoPhantom_model8_noisyGaussPoissL",
     # "tomoPhantom_model8_noisyGaussPoissM",
     # "tomoPhantom_model8_noisyGaussPoissH",
     # "tomoPhantom_model14_noisyGaussPoissL",
     # "tomoPhantom_model14_noisyGaussPoissM",
     # "tomoPhantom_model14_noisyGaussPoissH",
-    "tomoPhantom_model16_noisyGaussPoissL",
+    # "tomoPhantom_model16_noisyGaussPoissL",
     # "tomoPhantom_model16_noisyGaussPoissM",
     # "tomoPhantom_model16_noisyGaussPoissH",
 ]
 
 experiment_args = {
     # corresponding version of the model we want to use for prediction
-    # "e0": {"version": "version_0", "n_bernoulli_samples_prediction": 1, "resample_patch_each_iter":True},
+    "e0": {"version": "version_0", "n_bernoulli_samples_prediction": 1, "resample_patch_each_iter":True},
     "e1": {"version": "version_1", "n_bernoulli_samples_prediction": 1, "resample_patch_each_iter":True},
     # "e2": {"version": "version_2", "n_bernoulli_samples_prediction": 1, "resample_patch_each_iter":True},
     # "e3": {"version": "version_3", "n_bernoulli_samples_prediction": 1, "resample_patch_each_iter":True}
 }
 ######################################################################
 
-default_args = {"tomo_name": None, "n_bernoulli_samples_prediction": 20, "version": None, "resample_patch_each_iter":True}
+default_args = {
+    "tomo_name": None,
+    "n_bernoulli_samples_prediction": 20,
+    "version": None,
+    "resample_patch_each_iter":True,
+    "total_samples_prediction": 150
+}
 
 
 def main(experiment_name, args):
