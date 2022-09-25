@@ -220,9 +220,9 @@ experiment_args = {
     },
 } """
 
-experiment_name = "realBernoulli_volMask_comparison"
+""" experiment_name = "realBernoulli_volMask_comparison"
 
-tomogram_list = shrec_list
+tomogram_list = [shrec_list[0]]
 
 # SHREC21 deconv args
 deconv_kwargs = {
@@ -232,7 +232,7 @@ deconv_kwargs = {
     "deconvstrength": 1,
     "highpassnyquist": 0.02,
 }
-max_epochs = 10
+max_epochs = 400
 
 experiment_args = {
     "e0": {
@@ -245,9 +245,32 @@ experiment_args = {
     "e1": {
         "dataset": "singleCET_dataset",
         "epochs": max_epochs,
-        "p":0.5,
+        "p":0.3,
         "comment": "Volumetric mask(0.3) with prob=0.5",
         "Vmask_probability": 0.5,
+    },
+} """
+
+experiment_name = "fourierHighFreqMask_comparison"
+tomogram_list = [shrec_list[1], "tomo04_dummy"]
+
+max_epochs = 400
+experiment_args = {
+    "e0": {
+        "dataset": "singleCET_FourierDataset",
+        "epochs": max_epochs,
+        "p":0.3,
+        "bernoulliMask_prob": 0,
+        "comment": "Fourier with hiFreqMask=1",
+        "input_as_target": False,
+    },
+    "e1": {
+        "dataset": "singleCET_FourierDataset",
+        "epochs": max_epochs,
+        "p":0.5,
+        "bernoulliMask_prob": 0,
+        "comment": "Fourier with hiFreqMask=1",
+        "input_as_target": False,
     },
 }
 

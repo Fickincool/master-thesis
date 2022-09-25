@@ -140,7 +140,7 @@ class singleCET_dataset(Dataset):
     def create_Vmask(self):
         "Create volumetric blind spot random mask"
         downsampled_shape = np.array(3 * [self.subtomo_length]) // self.vol_scale_factor
-        downsampled_shape = tuple(downsampled_shape)
+        downsampled_shape = tuple([int(x) for x in downsampled_shape])
 
         # avoid power correction from dropout and set shape for upsampling
         bernoulli_Vmask = self.dropoutV(torch.ones(downsampled_shape)) * (
