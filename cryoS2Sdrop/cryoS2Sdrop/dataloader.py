@@ -293,7 +293,7 @@ class singleCET_FourierDataset(singleCET_dataset):
             self,
             tomo_path,
             subtomo_length,
-            p,
+            0.1,
             n_bernoulli_samples,
             volumetric_scale_factor,
             Vmask_probability,
@@ -387,7 +387,7 @@ class singleCET_FourierDataset(singleCET_dataset):
         downsampled_shape = tuple(downsampled_shape)
 
         bernoulli_Vmask = self.dropoutV(torch.ones(downsampled_shape)) * (
-            1 - self.Vmask_pct
+            1 - self.dropoutV.p
         )
         bernoulli_Vmask = bernoulli_Vmask.unsqueeze(0).unsqueeze(0)
         bernoulli_Vmask = self.upsample(bernoulli_Vmask)
@@ -412,11 +412,11 @@ class singleCET_FourierDataset(singleCET_dataset):
     def create_hiFreqMask(self):
         "Randomly mask high frequencies with a sphere"
         inner = 0
-        # outer radius cannot be bigger than half of the tomo's smallest dimension
-        min_length = min(self.tomo_shape)
-        outer = np.random.randint(
-            int(0.1 * min_length // 2), int(0.8 * min_length // 2)
-        )
+        shape_vol = np.array(self.tomo_shape).prod()
+        low_r = (0.05 * 3/(4*np.pi) * shape_vol)**(1/3)
+        high_r = (0.1 * 3/(4*np.pi) * shape_vol)**(1/3)
+        outer = np.random.uniform(low_r, high_r)
+        outer = int(np.round(outer))
 
         shell_mask = self.make_shell(inner, outer, self.tomo_shape)
         shell_mask = torch.tensor(shell_mask)
@@ -431,7 +431,7 @@ class singleCET_FourierDataset(singleCET_dataset):
         "Create pointed blind spot random mask"
         _shape = self.tomoF_shape
         # we allow power correction here: not multiplying by (1-p)
-        bernoulli_Pmask = self.dropout(torch.ones(_shape)) * (1 - self.p)
+        bernoulli_Pmask = self.dropout(torch.ones(_shape)) * (1 - self.dropout.p)
         bernoulli_Pmask = bernoulli_Pmask.unsqueeze(0)
 
         return bernoulli_Pmask
@@ -445,10 +445,19 @@ class singleCET_FourierDataset(singleCET_dataset):
         # else:
         #     mask = self.create_Pmask()
 
+        n = 2
         mask = self.create_hiFreqMask() + self.create_Vmask()
         mask = torch.where(mask > 1, 1, mask)
 
-        assert len(mask.unique()) == 2
+        otherMask_prob = 1 - self.bernoulliMask_prob
+        if np.random.uniform() < otherMask_prob:
+            invMask = self.create_Pmask()
+            invMask = 2*invMask - 1
+
+            mask = invMask*mask
+            n = 3
+
+        assert len(mask.unique()) == n
 
         return mask
 
