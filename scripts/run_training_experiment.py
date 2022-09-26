@@ -244,24 +244,48 @@ experiment_args = {
 
 
 experiment_name = "fourierHFplusVolMask_comparison"
-tomogram_list = [shrec_list[1], "tomo04_dummy"]
+tomogram_list = ["tomo04_dummy"]
 
-max_epochs = 400
+max_epochs = 70
 experiment_args = {
-    "e0": {
-        "dataset": "singleCET_FourierDataset",
-        "epochs": max_epochs,
-        "p": 0.3,
-        "bernoulliMask_prob": 0,
-        "comment": "Fourier with mixed Mask",
-        "input_as_target": False,
-    },
-    "e1": {
+    # "e0": {
+    #     "dataset": "singleCET_FourierDataset",
+    #     "epochs": max_epochs,
+    #     "p": 0.3,
+    #     "bernoulliMask_prob": 0,
+    #     "comment": "Fourier with mixed Mask",
+    #     "input_as_target": False,
+    # },
+    # "e1": {
+    #     "dataset": "singleCET_FourierDataset",
+    #     "epochs": max_epochs,
+    #     "p": 0.5,
+    #     "bernoulliMask_prob": 0,
+    #     "comment": "Fourier with mixed Mask",
+    #     "input_as_target": False,
+    # },
+    "e2": {
         "dataset": "singleCET_FourierDataset",
         "epochs": max_epochs,
         "p": 0.5,
+        "bernoulliMask_prob": 1,
+        "comment": "Fourier with mixed Mask p=0.5",
+        "input_as_target": False,
+    },
+    "e3": {
+        "dataset": "singleCET_FourierDataset",
+        "epochs": max_epochs,
+        "p": 0.7,
+        "bernoulliMask_prob": 1,
+        "comment": "Fourier with mixed Mask p=0.7",
+        "input_as_target": False,
+    },
+    "e4": {
+        "dataset": "singleCET_FourierDataset",
+        "epochs": max_epochs,
+        "p": 0.7,
         "bernoulliMask_prob": 0,
-        "comment": "Fourier with mixed Mask",
+        "comment": "Fourier with mixed Mask and random phase shifts with p=0.1",
         "input_as_target": False,
     },
 }
