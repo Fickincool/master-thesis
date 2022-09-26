@@ -286,3 +286,36 @@ def get_best_version(data_log, metric):
     worst = read_array(pred_tomo_path2)
 
     return best, gt, worst
+
+def parse_tomoPaths(tomo_name):
+    if tomo_name.startswith("tomoPhantom"):
+
+        cet_path = os.path.join(
+            PARENT_PATH, "data/S2SDenoising/dummy_tomograms/%s.mrc" % tomo_name
+        )
+        model_name = tomo_name.split("_")[1]
+
+        gt_cet_path = os.path.join(
+            PARENT_PATH, "data/S2SDenoising/dummy_tomograms/tomoPhantom_%s.mrc" % model_name
+        )
+
+    elif tomo_name.startswith("tomo"):
+        cet_path = os.path.join(
+            PARENT_PATH, "data/S2SDenoising/dummy_tomograms/%s.mrc" % tomo_name
+        )
+        _name = tomo_name.split("_")[0]
+        gt_cet_path = os.path.join(
+            PARENT_PATH, "data/S2SDenoising/dummy_tomograms/%s_cryoCAREDummy.mrc" % _name
+        )
+
+    elif tomo_name.startswith("shrec2021"):
+        cet_path = os.path.join(
+            PARENT_PATH, "data/S2SDenoising/dummy_tomograms/%s.mrc" % tomo_name
+        )
+        _name = tomo_name.split("_")[1]
+        gt_cet_path = os.path.join(
+            PARENT_PATH,
+            "data/S2SDenoising/dummy_tomograms/shrec2021_%s_gtDummy.mrc" % _name,
+        )
+        
+    return cet_path, gt_cet_path
