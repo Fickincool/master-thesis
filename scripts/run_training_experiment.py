@@ -246,57 +246,31 @@ experiment_args = {
 experiment_name = "fourierHFplusVolMask_comparison"
 tomogram_list = ["tomo04_dummy"]
 
-max_epochs = 70
+max_epochs = 400
 experiment_args = {
-    # "e0": {
-    #     "dataset": "singleCET_FourierDataset",
-    #     "epochs": max_epochs,
-    #     "p": 0.3,
-    #     "bernoulliMask_prob": 0,
-    #     "comment": "Fourier with mixed Mask",
-    #     "input_as_target": False,
-    # },
-    # "e1": {
-    #     "dataset": "singleCET_FourierDataset",
-    #     "epochs": max_epochs,
-    #     "p": 0.5,
-    #     "bernoulliMask_prob": 0,
-    #     "comment": "Fourier with mixed Mask",
-    #     "input_as_target": False,
-    # },
-    # here I changed the lowPassMask to be only between some small radius
-    # "e2": {
-    #     "dataset": "singleCET_FourierDataset",
-    #     "epochs": max_epochs,
-    #     "p": 0.5,
-    #     "bernoulliMask_prob": 1,
-    #     "comment": "Fourier with mixed Mask p=0.5",
-    #     "input_as_target": False,
-    # },
-    # "e3": {
-    #     "dataset": "singleCET_FourierDataset",
-    #     "epochs": max_epochs,
-    #     "p": 0.7,
-    #     "bernoulliMask_prob": 1,
-    #     "comment": "Fourier with mixed Mask p=0.7",
-    #     "input_as_target": False,
-    # },
-    # "e4": {
-    #     "dataset": "singleCET_FourierDataset",
-    #     "epochs": max_epochs,
-    #     "p": 0.7,
-    #     "bernoulliMask_prob": 0,
-    #     "comment": "Fourier with mixed Mask and random phase shifts with p=0.1",
-    #     "input_as_target": False,
-    # },
-    "e5": {
+    "e0": {
+        "dataset": "singleCET_FourierDataset",
+        "epochs": max_epochs,
+        "p": 0.5,
+        "bernoulliMask_prob": 1,
+        "comment": "Fourier with mixed Mask, dropout 0.5",
+        "input_as_target": False,
+    },
+    "e1": {
+        "dataset": "singleCET_FourierDataset",
+        "epochs": max_epochs,
+        "p": 0.5,
+        "bernoulliMask_prob": 0,
+        "comment": "HF + VolMask + invMask with bernoulli prob 0.1, dropout 0.5",
+        "input_as_target": False,
+    },
+    "e2": {
         "dataset": "singleCET_FourierDataset",
         "epochs": max_epochs,
         "p": 0.7,
         "bernoulliMask_prob": 0,
-        "comment": "Fourier with mixed Mask and random phase shifts with p=0.1, predict on saver samples",
+        "comment": "HF + VolMask + invMask with bernoulli prob 0.1, dropout 0.7",
         "input_as_target": False,
-        "predict_on_saved_fourier_samples":True
     },
 }
 

@@ -320,6 +320,10 @@ class singleCET_FourierDataset(singleCET_dataset):
         # here we only create one set of M bernoulli masks to be sampled from
         self.input_as_target = input_as_target
         self.bernoulliMask_prob = bernoulliMask_prob
+
+        # I thought predicting on the same fourier samples as the ones used for training would
+        # help improve performance. But it doesn't seem to be the case. It might speed up
+        # training a little though.
         if path_to_fourier_samples is not None:
             print('Found existing samples. Loading samples...')
             self.fourier_samples = torch.load(path_to_fourier_samples)
