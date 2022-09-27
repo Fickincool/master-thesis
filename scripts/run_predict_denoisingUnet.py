@@ -3,14 +3,15 @@ import json
 
 
 ################### SETUP ############################################
-experiment_name = "realBernoulli_volMask_comparison"
+experiment_name = "fourierHFplusVolMask_comparison"
 # tomogram_list = [
 #     "shrec2021_model4_dummy",
 #     "shrec2021_model2_dummy"
 # ]
 
 tomogram_list = [
-    "tomoPhantom_model8_noisyGaussPoissVL"
+    "tomo04_dummy"
+    # "tomoPhantom_model8_noisyGaussPoissVL"
     # "tomoPhantom_model8_noisyGaussPoissL",
     # "tomoPhantom_model8_noisyGaussPoissM",
     # "tomoPhantom_model8_noisyGaussPoissH",
@@ -24,8 +25,9 @@ tomogram_list = [
 
 experiment_args = {
     # corresponding version of the model we want to use for prediction
-    "e0": {"version": "version_0", "n_bernoulli_samples_prediction": 1, "resample_patch_each_iter":True},
-    "e1": {"version": "version_1", "n_bernoulli_samples_prediction": 1, "resample_patch_each_iter":True},
+    "e0": {"version": "version_5", "n_bernoulli_samples_prediction": 1, "resample_patch_each_iter":True,
+     "predict_on_saved_fourier_samples":True},
+    # "e1": {"version": "version_1", "n_bernoulli_samples_prediction": 1, "resample_patch_each_iter":True},
     # "e2": {"version": "version_2", "n_bernoulli_samples_prediction": 1, "resample_patch_each_iter":True},
     # "e3": {"version": "version_3", "n_bernoulli_samples_prediction": 1, "resample_patch_each_iter":True}
 }
@@ -36,7 +38,8 @@ default_args = {
     "n_bernoulli_samples_prediction": 20,
     "version": None,
     "resample_patch_each_iter":True,
-    "total_samples_prediction": 150
+    "total_samples_prediction": 150,
+    "predict_on_saved_fourier_samples":None
 }
 
 

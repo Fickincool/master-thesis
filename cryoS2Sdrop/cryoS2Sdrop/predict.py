@@ -137,3 +137,35 @@ def predict_full_tomogram(singleCET_dataset, model, resample_patch_each_iter, N=
     del count_tensor
 
     return denoised_tomo
+
+
+def get_predictions(singleCET_dataset, model, resample_patch_each_iter, N):
+    tomo_shape = singleCET_dataset.tomo_shape
+
+    all_preds = []
+
+    for idx, p0 in enumerate(tqdm(singleCET_dataset.grid)):
+        M = singleCET_dataset.n_bernoulli_samples
+
+        if resample_patch_each_iter:
+            # effective number of samples
+            n_times = N // M + 1
+            pred = []
+            for n in range(n_times):
+                _pred, zyx_min, zyx_max = predict_patch(idx, p0, singleCET_dataset, model)
+                pred.append(_pred)
+
+            # we want to average each patch over N Bernoulli samples, typically N >> M
+            pred = torch.cat(pred)
+            # print("Prediction after %i times" %n_times, pred.shape)
+            zmin, ymin, xmin = zyx_min
+            zmax, ymax, xmax = zyx_max
+
+        else:
+            pred, zyx_min, zyx_max = predict_patch0(idx, p0, singleCET_dataset, model, N)
+            zmin, ymin, xmin = zyx_min
+            zmax, ymax, xmax = zyx_max
+
+        all_preds.append(pred)
+
+    return all_preds
