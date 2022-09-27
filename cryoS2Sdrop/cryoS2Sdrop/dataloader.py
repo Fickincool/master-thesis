@@ -275,6 +275,7 @@ class singleCET_FourierDataset(singleCET_dataset):
         input_as_target=False,
         bernoulliMask_prob=1,
         clip=True,
+        path_to_fourier_samples=None,
         **deconv_kwargs
     ):
         """
@@ -319,7 +320,12 @@ class singleCET_FourierDataset(singleCET_dataset):
         # here we only create one set of M bernoulli masks to be sampled from
         self.input_as_target = input_as_target
         self.bernoulliMask_prob = bernoulliMask_prob
-        self.fourier_samples = self.create_FourierSamples()
+        if path_to_fourier_samples is not None:
+            print('Found existing samples. Loading samples...')
+            self.fourier_samples = torch.load(path_to_fourier_samples)
+            print('Done!!')
+        else:
+            self.fourier_samples = self.create_FourierSamples()
 
         return
 

@@ -35,10 +35,12 @@ exp_name = sys.argv[2]
 n_bernoulli_samples = args["n_bernoulli_samples_prediction"]
 total_samples = args["total_samples_prediction"]
 
+predict_on_saved_fourier_samples = args["predict_on_saved_fourier_samples"]
+
 tomo_name = args["tomo_name"]
 
 try:  # I used this as input to compare results with and without resampling
-    # According to whay I found (Notebook 6.03) resampling is significantly better
+    # According to what I found (Notebook 6.20) resampling is significantly better
     resample_patch_each_iter = args["resample_patch_each_iter"]
 except KeyError:
     resample_patch_each_iter = True
@@ -64,6 +66,12 @@ logdir = os.path.join(tensorboard_logdir, version)
 
 with open(os.path.join(logdir, "experiment_args.json"), "r") as f:
     exp_args = json.load(f)
+
+if predict_on_saved_fourier_samples:
+    path_to_fourier_samples = os.path.join(logdir, 'singleCET_FourierDataset.samples')
+
+else:
+    path_to_fourier_samples = None
 
 deconv_kwargs = exp_args["deconv_kwargs"]
 predict_simRecon = exp_args["predict_simRecon"]
@@ -117,6 +125,7 @@ elif dataset == "singleCET_FourierDataset":
         n_shift=0,
         gt_tomo_path=gt_cet_path,
         bernoulliMask_prob=bernoulliMask_prob,
+        path_to_fourier_samples=path_to_fourier_samples,
         **deconv_kwargs
     )
 
@@ -223,3 +232,7 @@ filename = cet_path.split("/")[-1].replace(".mrc", "_s2sDenoised")
 filename = os.path.join(logdir, "%s.mrc" % (filename))
 
 write_array(denoised_tomo.numpy(), filename)
+
+# # delete the samples after prediction is finished
+# if predict_on_saved_fourier_samples:
+#     os.system("rm %s" %path_to_fourier_samples)

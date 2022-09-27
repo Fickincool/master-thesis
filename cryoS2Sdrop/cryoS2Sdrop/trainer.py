@@ -1,3 +1,4 @@
+from ensurepip import version
 import os
 import yaml
 
@@ -8,6 +9,8 @@ from pytorch_lightning import Trainer
 from pytorch_lightning import loggers as pl_loggers
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 from pytorch_lightning.callbacks import LearningRateMonitor
+from cryoS2Sdrop.dataloader import singleCET_FourierDataset
+
 
 
 class denoisingTrainer:
@@ -90,10 +93,16 @@ class denoisingTrainer:
 
         if trainer.is_global_zero:
             #### Log additional hyperparameters #####
-            hparams_file = os.path.join(
+            version_folder = os.path.join(
                 self.tensorboard_logdir, "version_%i" % self.model.logger.version
             )
-            hparams_file = os.path.join(hparams_file, "hparams.yaml")
+            hparams_file = os.path.join(version_folder, "hparams.yaml")
+
+            # in this dataset, we save the samples to be used later for prediction
+            if type(self.dataset)==singleCET_FourierDataset:
+                
+                samples_file = os.path.join(version_folder, "singleCET_FourierDataset.samples")
+                torch.save(self.dataset.fourier_samples, samples_file)
 
             dataset_params = ['tomo_path', 'gt_tomo_path', 'subtomo_length',
              'vol_scale_factor', 'Vmask_probability', 'Vmask_pct', 'use_deconv_data',
