@@ -1,11 +1,5 @@
-from tomoSegmentPipeline import dataloader as dl
 from tomoSegmentPipeline.utils import setup
-from tomoSegmentPipeline.dataloader import (
-    to_categorical,
-    transpose_to_channels_first,
-    tomoSegment_dummyDataset,
-    tomoSegment_dataset,
-)
+
 from tomoSegmentPipeline.training import Train
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 from pytorch_lightning.callbacks import LearningRateMonitor
@@ -14,8 +8,6 @@ from pytorch_lightning.callbacks import LearningRateMonitor
 import os
 
 PARENT_PATH = setup.PARENT_PATH
-
-import torch
 
 val_tomos = ["tomo32", "tomo10"]
 concat_val_ids = sorted([s.replace("tomo", "") for s in val_tomos])
@@ -37,7 +29,7 @@ for i in range(5):
 
             tb_logdir = os.path.join(
                 PARENT_PATH,
-                "data/model_logs/incremental_models/logs/BaselineModel/%s/train%s/nPatches_%i"
+                "data/membraneSegmentation/model_logs/incremental_models/logs/BaselineModel/%s/train%s/nPatches_%i"
                 % (input_type, concat_train_ids, nPatches),
             )
             model_name = "Baseline_" + input_type
@@ -82,10 +74,13 @@ for i in range(5):
                 val_tomos,
                 input_type=input_type,
                 num_gpus=2,
-                accelerator="ddp",
+                accelerator="gpu",
+                strategy="ddp",
                 nPatches_training=nPatches,
                 num_workers=1,
                 train_callbacks=callbacks,
             )
 
             del trainer
+        
+        break

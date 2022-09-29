@@ -63,7 +63,6 @@ class DeepFinder_model(pl.LightningModule):
             nn.Conv3d(64, 64, (3, 3, 3), padding=1),
             nn.ReLU(),
             nn.ConvTranspose3d(64, 64, (2, 2, 2), stride=2),
-            nn.Conv3d(64, 64, (3, 3, 3), padding=1),
         )
         self.layer4 = nn.Sequential(
             nn.Conv3d(64 + 48, 48, (3, 3, 3), padding=1),
@@ -71,7 +70,6 @@ class DeepFinder_model(pl.LightningModule):
             nn.Conv3d(48, 48, (3, 3, 3), padding=1),
             nn.ReLU(),
             nn.ConvTranspose3d(48, 48, (2, 2, 2), stride=2),
-            nn.Conv3d(48, 48, (3, 3, 3), padding=1),
         )
         self.layer5 = nn.Sequential(
             nn.Conv3d(48 + 32, 32, (3, 3, 3), padding=1),

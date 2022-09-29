@@ -153,6 +153,7 @@ class Train(core.DeepFinder):
         input_type,
         num_gpus,
         accelerator,
+        strategy,
         num_workers,
         nPatches_training=None,
         resume_from_checkpoint=None,
@@ -234,6 +235,7 @@ class Train(core.DeepFinder):
             max_epochs=self.epochs,
             enable_progress_bar=False,
             accelerator=accelerator,
+            strategy=strategy,
             resume_from_checkpoint=resume_from_checkpoint,
             callbacks=train_callbacks,
         )
