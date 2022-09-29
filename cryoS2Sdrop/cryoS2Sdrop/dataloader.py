@@ -294,11 +294,11 @@ class singleCET_FourierDataset(singleCET_dataset):
             self,
             tomo_path,
             subtomo_length,
-            0.1,
+            0.1, # bernoulli masking prob
             n_bernoulli_samples,
             volumetric_scale_factor,
             Vmask_probability,
-            p,
+            p, # volumetric masking prob
             transform,
             n_shift,
             gt_tomo_path,

@@ -245,7 +245,14 @@ experiment_args = {
 
 experiment_name = "fourierHFplusVolMask_comparison"
 tomogram_list = ["tomo04_dummy"]
-
+# Spinach tomos deconv args
+deconv_kwargs = {
+    "angpix": 14.08,
+    "defocus": 0,
+    "snrfalloff": 0.6,
+    "deconvstrength": 0.45,
+    "highpassnyquist": 0.02,
+}
 max_epochs = 400
 experiment_args = {
     "e0": {
@@ -253,24 +260,27 @@ experiment_args = {
         "epochs": max_epochs,
         "p": 0.5,
         "bernoulliMask_prob": 1,
-        "comment": "Fourier with mixed Mask, dropout 0.5",
+        "comment": "Fourier with mixed Mask, dropout 0.5 deconvolved",
         "input_as_target": False,
+        "deconv_kwargs":deconv_kwargs
     },
     "e1": {
         "dataset": "singleCET_FourierDataset",
         "epochs": max_epochs,
         "p": 0.5,
         "bernoulliMask_prob": 0,
-        "comment": "HF + VolMask + invMask with bernoulli prob 0.1, dropout 0.5",
+        "comment": "HF + VolMask + invMask with bernoulli prob 0.1, dropout 0.5 deconvolved",
         "input_as_target": False,
+        "deconv_kwargs":deconv_kwargs
     },
     "e2": {
         "dataset": "singleCET_FourierDataset",
         "epochs": max_epochs,
         "p": 0.7,
         "bernoulliMask_prob": 0,
-        "comment": "HF + VolMask + invMask with bernoulli prob 0.1, dropout 0.7",
+        "comment": "HF + VolMask + invMask with bernoulli prob 0.1, dropout 0.7 deconvolved",
         "input_as_target": False,
+        "deconv_kwargs":deconv_kwargs
     },
 }
 
