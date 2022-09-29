@@ -25,9 +25,16 @@ tomogram_list = [
 
 experiment_args = {
     # corresponding version of the model we want to use for prediction
-    "e0": {"version": "version_5", "n_bernoulli_samples_prediction": 1, "resample_patch_each_iter":True,
-     "predict_on_saved_fourier_samples":True},
-    # "e1": {"version": "version_1", "n_bernoulli_samples_prediction": 1, "resample_patch_each_iter":True},
+    "e0": {
+        "version": "version_1",
+        "n_bernoulli_samples_prediction": 1,
+        "resample_patch_each_iter": True
+    },
+    "e1": {
+        "version": "version_2",
+        "n_bernoulli_samples_prediction": 1,
+        "resample_patch_each_iter": True
+    },
     # "e2": {"version": "version_2", "n_bernoulli_samples_prediction": 1, "resample_patch_each_iter":True},
     # "e3": {"version": "version_3", "n_bernoulli_samples_prediction": 1, "resample_patch_each_iter":True}
 }
@@ -37,9 +44,9 @@ default_args = {
     "tomo_name": None,
     "n_bernoulli_samples_prediction": 20,
     "version": None,
-    "resample_patch_each_iter":True,
+    "resample_patch_each_iter": True,
     "total_samples_prediction": 150,
-    "predict_on_saved_fourier_samples":None
+    "predict_on_saved_fourier_samples": None,
 }
 
 

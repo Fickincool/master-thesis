@@ -301,7 +301,7 @@ default_args = {
     "comment": None,
     "bernoulliMask_prob": 1,
     "input_as_target": None,
-    "predict_on_saved_fourier_samples":None
+    "predict_on_saved_fourier_samples": None,
 }
 
 
