@@ -68,7 +68,7 @@ with open(os.path.join(logdir, "experiment_args.json"), "r") as f:
     exp_args = json.load(f)
 
 if predict_on_saved_fourier_samples:
-    path_to_fourier_samples = os.path.join(logdir, 'singleCET_FourierDataset.samples')
+    path_to_fourier_samples = os.path.join(logdir, "singleCET_FourierDataset.samples")
 
 else:
     path_to_fourier_samples = None
@@ -76,9 +76,7 @@ else:
 deconv_kwargs = exp_args["deconv_kwargs"]
 predict_simRecon = exp_args["predict_simRecon"]
 use_deconv_as_target = exp_args["use_deconv_as_target"]
-bernoulliMask_prob = parse_null_arg(
-    exp_args["bernoulliMask_prob"], float
-)
+bernoulliMask_prob = parse_null_arg(exp_args["bernoulliMask_prob"], float)
 
 print("Loading model from: %s" % logdir)
 
