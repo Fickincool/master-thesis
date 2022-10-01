@@ -98,11 +98,11 @@ class denoisingTrainer:
             )
             hparams_file = os.path.join(version_folder, "hparams.yaml")
 
-            # in this dataset, we save the samples to be used later for prediction
-            if type(self.dataset)==singleCET_FourierDataset:
-                
-                samples_file = os.path.join(version_folder, "singleCET_FourierDataset.samples")
-                torch.save(self.dataset.fourier_samples, samples_file)
+            # in this dataset, we saved the samples at some point to be used later for prediction
+            # this doesn't seem to yield any advantage.
+            # if type(self.dataset)==singleCET_FourierDataset: 
+            #     samples_file = os.path.join(version_folder, "singleCET_FourierDataset.samples")
+            #     torch.save(self.dataset.fourier_samples, samples_file)
 
             dataset_params = ['tomo_path', 'gt_tomo_path', 'subtomo_length',
              'vol_scale_factor', 'Vmask_probability', 'Vmask_pct', 'use_deconv_data',
@@ -118,7 +118,8 @@ class denoisingTrainer:
                 "Dataloader": type(self.dataset),
                 "Version_comment":comment,
                 "Dataloader.p": p,
-                'Dataloader.batch_size':batch_size
+                'Dataloader.batch_size':batch_size,
+                "dropout_p": self.model.p
             }
 
             for key in dataset_params:

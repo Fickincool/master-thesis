@@ -263,12 +263,12 @@ class singleCET_FourierDataset(singleCET_dataset):
         self,
         tomo_path,
         subtomo_length,
-        p,
+        p, # for the inverse mask
         n_bernoulli_samples=6,
         total_samples=100,
         volumetric_scale_factor=4,
-        Vmask_probability=0,
-        Vmask_pct=0.1,  # deprecated, we use p
+        Vmask_probability=0, # deprecated
+        Vmask_pct=0.1, # for the volumetric mask
         transform=None,
         n_shift=0,
         gt_tomo_path=None,
@@ -292,38 +292,39 @@ class singleCET_FourierDataset(singleCET_dataset):
         """
         singleCET_dataset.__init__(
             self,
-            tomo_path,
-            subtomo_length,
-            0.1,
-            n_bernoulli_samples,
-            volumetric_scale_factor,
-            Vmask_probability,
-            p,
-            transform,
-            n_shift,
-            gt_tomo_path,
-            clip,
+            tomo_path=tomo_path,
+            subtomo_length=subtomo_length,
+            p=p, # Pmask probability
+            n_bernoulli_samples=n_bernoulli_samples,
+            volumetric_scale_factor=volumetric_scale_factor,
+            Vmask_probability=Vmask_probability, # not used in this case
+            Vmask_pct=Vmask_pct, # Vmask probability
+            transform=transform,
+            n_shift=n_shift,
+            gt_tomo_path=gt_tomo_path,
+            clip=clip,
             **deconv_kwargs
         )
 
         self.total_samples = total_samples
         self.dataF = torch.fft.rfftn(self.data)
         self.tomoF_shape = self.dataF.shape
-        self.logPower_Fdata = np.log(np.abs(self.dataF) ** 2)
-        # the spectrum still shows strong outliers
-        self.logPower_Fdata = self.standardize(self.clip(self.logPower_Fdata))
-        self.power_Fdata = np.exp(self.logPower_Fdata)
+        # Deprecated
+        # self.logPower_Fdata = np.log(np.abs(self.dataF) ** 2)
+        # # the spectrum still shows strong outliers
+        # self.logPower_Fdata = self.standardize(self.clip(self.logPower_Fdata))
+        # self.power_Fdata = np.exp(self.logPower_Fdata)
+        # self.highPower_mask = (
+        #     torch.tensor(self.power_Fdata > np.quantile(self.power_Fdata, 0.5)) * 1.0
+        # )
 
-        self.highPower_mask = (
-            torch.tensor(self.power_Fdata > np.quantile(self.power_Fdata, 0.5)) * 1.0
-        )
         # here we only create one set of M bernoulli masks to be sampled from
         self.input_as_target = input_as_target
         self.bernoulliMask_prob = bernoulliMask_prob
 
         # I thought predicting on the same fourier samples as the ones used for training would
         # help improve performance. But it doesn't seem to be the case. It might speed up
-        # training a little though.
+        # training a little though by reducing time to create samples.
         if path_to_fourier_samples is not None:
             print('Found existing samples. Loading samples...')
             self.fourier_samples = torch.load(path_to_fourier_samples)
@@ -447,27 +448,16 @@ class singleCET_FourierDataset(singleCET_dataset):
         return bernoulli_Pmask
 
     def create_mask(self):
-        "Create a mask choosing between Bernoulli and other type. Could be volumetric of highFreq."
-        # otherMask_prob = 1 - self.bernoulliMask_prob
-
-        # if np.random.uniform() < otherMask_prob:
-        #     mask = self.create_hiFreqMask()
-        # else:
-        #     mask = self.create_Pmask()
-
-        n = 2
+        "Create a mask choosing between Bernoulli and other type. Could be volumetric or highFreq."
+        # Best mask so far.
         mask = self.create_hiFreqMask() + self.create_Vmask()
         mask = torch.where(mask > 1, 1, mask)
+        invMask = self.create_Pmask()
+        invMask = 2*invMask - 1
 
-        otherMask_prob = 1 - self.bernoulliMask_prob
-        if np.random.uniform() < otherMask_prob:
-            invMask = self.create_Pmask()
-            invMask = 2*invMask - 1
+        mask = invMask*mask
 
-            mask = invMask*mask
-            n = 3
-
-        assert len(mask.unique()) == n
+        assert len(mask.unique()) == 3
 
         return mask
 

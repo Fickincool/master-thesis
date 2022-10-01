@@ -24,6 +24,14 @@ tomophantom_dict = {
 
 shrec_list = ["shrec2021_model4_dummy", "shrec2021_model2_dummy"]
 
+spinach_deconv_kwargs = {
+    "angpix": 14.08,
+    "defocus": 0,
+    "snrfalloff": 0.6,
+    "deconvstrength": 0.45,
+    "highpassnyquist": 0.02,
+}
+
 """ experiment_name = "realBernoulli_convolved_comparison"
 tomogram_list = ["shrec2021_model4_dummy", "shrec2021_model2_dummy"]
 SHREC21 deconv args
@@ -243,43 +251,63 @@ experiment_args = {
 } """
 
 
-experiment_name = "fourierHFplusVolMask_comparison"
-tomogram_list = ["tomo04_dummy"]
+experiment_name = "fourierTripleMask_comparison"
+# tomogram_list = ["tomo04_dummy"]
+tomogram_list = tomophantom_dict["model8"] + tomophantom_dict["model14"] + tomophantom_dict["model16"] 
 
 max_epochs = 400
 experiment_args = {
     "e0": {
         "dataset": "singleCET_FourierDataset",
         "epochs": max_epochs,
-        "p": 0.5,
-        "bernoulliMask_prob": 1,
-        "comment": "Fourier with mixed Mask, dropout 0.5",
+        "p": 0.1,
+        "Vmask_pct":0.5,
+        "dropout_p":0.7,
+        "volumetric_scale_factor":8,
+        "comment": "p0.1, Vmask_p0.5, volFact8, dropout0.7",
         "input_as_target": False,
     },
-    "e1": {
-        "dataset": "singleCET_FourierDataset",
-        "epochs": max_epochs,
-        "p": 0.5,
-        "bernoulliMask_prob": 0,
-        "comment": "HF + VolMask + invMask with bernoulli prob 0.1, dropout 0.5",
-        "input_as_target": False,
-    },
+    # "e1": {
+    #     "dataset": "singleCET_FourierDataset",
+    #     "epochs": max_epochs,
+    #     "p": 0.1,
+    #     "Vmask_pct":0.5,
+    #     "dropout_p":0.7,
+    #     "volumetric_scale_factor":8,
+    #     "comment": "p0.1, Vmask_p0.5, volFact8, dropout0.7, deconv",
+    #     "input_as_target": False,
+    #     "deconv_kwargs":spinach_deconv_kwargs
+    # },
     "e2": {
         "dataset": "singleCET_FourierDataset",
         "epochs": max_epochs,
-        "p": 0.7,
-        "bernoulliMask_prob": 0,
-        "comment": "HF + VolMask + invMask with bernoulli prob 0.1, dropout 0.7",
+        "p": 0.1,
+        "Vmask_pct":0.5,
+        "dropout_p":0.8,
+        "volumetric_scale_factor":8,
+        "comment": "p0.1, Vmask_p0.5, volFact8, dropout0.8",
         "input_as_target": False,
     },
-}
+    # "e3": {
+    #     "dataset": "singleCET_FourierDataset",
+    #     "epochs": max_epochs,
+    #     "p": 0.1,
+    #     "Vmask_pct":0.5,
+    #     "dropout_p":0.8,
+    #     "volumetric_scale_factor":8,
+    #     "comment": "p0.1, Vmask_p0.5, volFact8, dropout0.8, deconv",
+    #     "input_as_target": False,
+    #     "deconv_kwargs":spinach_deconv_kwargs
+    # },
 
+}
 
 experiment_logdir = "/home/ubuntu/Thesis/data/S2SDenoising/experiment_args"
 
 default_args = {
     "tomo_name": None,
-    "p": 0.3,  # bernoulli masking AND dropout probabilities
+    "p": 0.3,  # bernoulli masking
+    "dropout_p": 0.3, # dropout prob
     "alpha": 0,
     "n_bernoulli_samples": 6,
     "total_samples": 100,

@@ -36,6 +36,8 @@ args = json.loads(sys.argv[1])
 exp_name = sys.argv[2]
 
 p = args["p"]  # bernoulli masking probability
+dropout_p = args["dropout_p"]
+
 n_bernoulli_samples = args["n_bernoulli_samples"]
 total_samples = args["total_samples"]
 alpha = args["alpha"]
@@ -116,7 +118,7 @@ if args["dataset"] == "singleCET_dataset":
 
     collate_fn = aggregate_bernoulliSamples
     loss_fn = self2selfLoss(alpha=alpha)
-    model = Denoising_3DUNet(loss_fn, lr, n_features, p, n_bernoulli_samples)
+    model = Denoising_3DUNet(loss_fn, lr, n_features, dropout_p, n_bernoulli_samples)
     model_name = "s2sDenoise3D"
     transform = randomRotation3D(0.5)
     my_dataset.transform = transform
@@ -141,7 +143,7 @@ elif args["dataset"] == "singleCET_FourierDataset":
 
     collate_fn = aggregate_bernoulliSamples2
     loss_fn = self2selfLoss_noMask(alpha=alpha)
-    model = Denoising_3DUNet_v2(loss_fn, lr, n_features, p, n_bernoulli_samples)
+    model = Denoising_3DUNet_v2(loss_fn, lr, n_features, dropout_p, n_bernoulli_samples)
     model_name = "s2sDenoise3D_fourier"
     transform = randomRotation3D_fourierSamples(0.5)
 
@@ -161,7 +163,7 @@ elif args["dataset"] == "singleCET_ProjectedDataset":
     # override bernoulli samples in this case. We always have only one.
     n_bernoulli_samples = 1
     loss_fn = self2selfLoss_noMask(alpha=alpha)
-    model = Denoising_3DUNet_v2(loss_fn, lr, n_features, p, n_bernoulli_samples)
+    model = Denoising_3DUNet_v2(loss_fn, lr, n_features, dropout_p, n_bernoulli_samples)
     model_name = "s2sDenoise3D_simulatedN2N"
     transform = randomRotation3D_fourierSamples(0.5)
 

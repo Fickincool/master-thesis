@@ -86,7 +86,8 @@ dataset = hparams["dataset"]
 
 cet_path = hparams["tomo_path"]
 gt_cet_path = hparams["gt_tomo_path"]
-p = float(hparams["p"])  # dropout (zeroing) probability
+p = float(hparams["Dataloader.p"])  # Bernoulli mask probability
+dropout_p = float(hparams["p"]) # dropout probability, same as dropout_p
 subtomo_length = int(hparams["subtomo_length"])
 n_features = int(hparams["n_features"])
 volumetric_scale_factor = parse_null_arg(hparams["vol_scale_factor"], int)
