@@ -266,6 +266,7 @@ experiment_args = {
         "volumetric_scale_factor":8,
         "comment": "p0.1, Vmask_p0.5, volFact8, dropout0.7",
         "input_as_target": False,
+        "deconv_kwargs":deconv_kwargs
     },
     # "e1": {
     #     "dataset": "singleCET_FourierDataset",
@@ -287,6 +288,7 @@ experiment_args = {
         "volumetric_scale_factor":8,
         "comment": "p0.1, Vmask_p0.5, volFact8, dropout0.8",
         "input_as_target": False,
+        "deconv_kwargs":deconv_kwargs
     },
     # "e3": {
     #     "dataset": "singleCET_FourierDataset",

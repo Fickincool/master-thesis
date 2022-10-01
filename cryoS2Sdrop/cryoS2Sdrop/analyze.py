@@ -55,6 +55,30 @@ def plot_centralSlices(tomo_data, set_axis_off, names=None, use_global_minMax=Fa
     return fig, ax
 
 
+def plot_centralSlices(tomo_data, set_axis_off, names=None):
+    shape = np.array(tomo_data.shape)
+    idx_central_slices = shape//2
+    ratios = shape/shape.max()
+    
+    fig, ax = plt.subplots(1, 3, figsize=(25, 10), gridspec_kw={'width_ratios': ratios})  
+    if set_axis_off:
+        list(map(lambda axi: axi.set_axis_off(), ax.ravel()))
+        
+    plt.tight_layout()
+    
+    if names is None:
+        names = ['Central XY plane', 'Central ZX plane', 'Central ZY plane']
+    
+    for i in range(3):
+        tomo_slice = np.take(tomo_data, idx_central_slices[i], axis=i)
+        ax[i].imshow(tomo_slice)
+        ax[i].set_title(names[i], fontsize=16)
+    
+    plt.show()
+    
+    return fig, ax
+
+
 def standardize(X: torch.tensor):
     mean = X.mean()
     std = X.std()
