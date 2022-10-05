@@ -73,13 +73,19 @@ if tomo_name.startswith("tomoPhantom"):
     )
 
 elif tomo_name.startswith("tomo"):
-    cet_path = os.path.join(
-        PARENT_PATH, "data/S2SDenoising/dummy_tomograms/%s.mrc" % tomo_name
-    )
-    _name = tomo_name.split("_")[0]
-    gt_cet_path = os.path.join(
-        PARENT_PATH, "data/S2SDenoising/dummy_tomograms/%s_cryoCAREDummy.mrc" % _name
-    )
+    if "dummy" in tomo_name:
+        cet_path = os.path.join(
+            PARENT_PATH, "data/S2SDenoising/dummy_tomograms/%s.mrc" % tomo_name
+        )
+        _name = tomo_name.split("_")[0]
+        gt_cet_path = os.path.join(
+            PARENT_PATH, "data/S2SDenoising/dummy_tomograms/%s_cryoCAREDummy.mrc" % _name
+        )
+    else:
+        cet_path = os.path.join(
+            PARENT_PATH, "data/raw_cryo-ET/%s.mrc" % tomo_name
+        )
+        gt_cet_path = None
 
 elif tomo_name.startswith("shrec2021"):
     cet_path = os.path.join(
