@@ -7,6 +7,8 @@ from tomopy.recon.algorithm import recon
 from .deconvolution import tom_deconv_tomo
 from scipy.stats import multivariate_normal
 from tqdm import tqdm
+from tqdm_joblib import tqdm_joblib
+from joblib import Parallel, delayed
 
 
 class singleCET_dataset(Dataset):
@@ -40,11 +42,8 @@ class singleCET_dataset(Dataset):
         self.tomo_path = tomo_path
 
         self.data = torch.tensor(read_array(tomo_path))
-        if clip:
-            self.data = self.clip(self.data)
-        self.data = self.standardize(self.data)
-
-        # TODO: check if deconvolution needs to be applied after or before clipping and standardizing.
+        
+        # first deconvolve and then clip and standardize
         self.deconv_kwargs = {"vol": self.data.numpy(), **deconv_kwargs}
         self.use_deconv_data = self.check_deconv_kwargs(deconv_kwargs)
         if self.use_deconv_data:
@@ -52,6 +51,10 @@ class singleCET_dataset(Dataset):
             self.data = torch.tensor(self.data)
         else:
             pass
+
+        if clip:
+            self.data = self.clip(self.data)
+        self.data = self.standardize(self.data)
 
         self.gt_tomo_path = gt_tomo_path
         if gt_tomo_path is not None:
@@ -309,14 +312,6 @@ class singleCET_FourierDataset(singleCET_dataset):
         self.total_samples = total_samples
         self.dataF = torch.fft.rfftn(self.data)
         self.tomoF_shape = self.dataF.shape
-        # Deprecated
-        # self.logPower_Fdata = np.log(np.abs(self.dataF) ** 2)
-        # # the spectrum still shows strong outliers
-        # self.logPower_Fdata = self.standardize(self.clip(self.logPower_Fdata))
-        # self.power_Fdata = np.exp(self.logPower_Fdata)
-        # self.highPower_mask = (
-        #     torch.tensor(self.power_Fdata > np.quantile(self.power_Fdata, 0.5)) * 1.0
-        # )
 
         # here we only create one set of M bernoulli masks to be sampled from
         self.input_as_target = input_as_target
@@ -334,10 +329,9 @@ class singleCET_FourierDataset(singleCET_dataset):
 
         return
 
-    def make_shell(self, inner_radius, outer_radius, tomo_shape):
+    def _make_shell(self, inner_radius, outer_radius, tomo_shape):
         """
-        Creates a (3D) shell with given inner_radius and delta_r width centered at the middle of the array.
-
+        Creates a (3D) shell with given inner_radius and outer_radius centered at the middle of the array.
         """
 
         length = min(tomo_shape)
@@ -372,12 +366,25 @@ class singleCET_FourierDataset(singleCET_dataset):
         aux = np.rot90(
             _shell_mask, 2, axes=(1, 2)
         )  # rotate again 180º to get full volume
+        
+        _shell_mask += aux
+        
+        return _shell_mask
 
-        aux2 = _shell_mask + aux
+    def make_shell(self, inner_radius, outer_radius, tomo_shape):
+        """
+        Creates a (3D) shell with given inner_radius and delta_r width centered at the middle of the array.
+
+        """
+        length = min(tomo_shape)
+        if length % 2 == 1:
+            length = length - 1
+
+        _shell_mask = self._make_shell(inner_radius, outer_radius, tomo_shape)
 
         if inner_radius == 0:
             vol = 4 / 3 * np.pi * outer_radius**3
-            pct_diff = (vol - aux2.sum()) / vol
+            pct_diff = (vol - _shell_mask.sum()) / vol
             if pct_diff > 0.1:
                 print(pct_diff)
                 raise ValueError("Sanity check for sphere volume not passed")
@@ -388,8 +395,51 @@ class singleCET_FourierDataset(singleCET_dataset):
             (tomo_shape[0] - length) // 2 : (tomo_shape[0] + length) // 2,
             (tomo_shape[1] - length) // 2 : (tomo_shape[1] + length) // 2,
             (tomo_shape[2] - length) // 2 : (tomo_shape[2] + length) // 2,
-        ] = aux2
+        ] = _shell_mask
 
+        return shell_mask
+
+    def make_shell2(self, inner_radius, outer_radius, tomo_shape, factor):
+        """
+        Creates a (3D) shell with given inner_radius and delta_r width centered at the middle of the array.
+
+        """
+        
+        length = min(tomo_shape)
+        if length % 2 == 1:
+            length = length - 1
+            
+        if 2*outer_radius>length:
+            raise ValueError('Cannot fit a bigger sphere than the smallest tomogram length.')
+        
+        if factor % 2 == 1:
+            raise ValueError('factor values must be divisible by 2')
+            
+        upsample = torch.nn.Upsample(scale_factor=factor)
+        
+        tomo_shape_down = np.array(tomo_shape)//factor
+        outer_radius_down = int(np.round(outer_radius/factor))
+        inner_radius_down = int(np.round(inner_radius/factor))
+
+        _shell_mask = self._make_shell(inner_radius_down, outer_radius_down, tomo_shape_down)
+        
+        _shell_mask = torch.tensor(_shell_mask).unsqueeze(0).unsqueeze(0)
+        _shell_mask = upsample(_shell_mask).squeeze().numpy()
+
+        if inner_radius == 0:
+            vol = 4 / 3 * np.pi * outer_radius**3
+            pct_diff = (vol - _shell_mask.sum()) / vol
+            if pct_diff > 0.1:
+                print(pct_diff)
+                raise ValueError("Percentual difference between the created sphere and the actual volume of a sphere of the given radius is bigger than 0.1")
+        
+        # finally, pad shape to correspond the original shape
+        shape_diff = np.array(tomo_shape) - np.array(_shell_mask.shape)
+        shape_diff = shape_diff//2 + 1
+        _shell_mask = np.pad(_shell_mask, [(shape_diff[0], ), (shape_diff[1], ), (shape_diff[2], )])
+
+        shell_mask =  _shell_mask[0:tomo_shape[0], 0:tomo_shape[1], 0:tomo_shape[2]]
+        
         return shell_mask
 
     def create_Vmask(self):
@@ -428,8 +478,13 @@ class singleCET_FourierDataset(singleCET_dataset):
         high_r = (0.1 * 3/(4*np.pi) * shape_vol)**(1/3)
         outer = np.random.uniform(low_r, high_r)
         outer = int(np.round(outer))
+        
+        if min(self.tomo_shape) > 400:
+            # print("Using 2x downsampled shape to create spheres")
+            shell_mask = self.make_shell2(inner, outer, self.tomo_shape, factor=2)
+        else:
+            shell_mask = self.make_shell(inner, outer, self.tomo_shape)
 
-        shell_mask = self.make_shell(inner, outer, self.tomo_shape)
         shell_mask = torch.tensor(shell_mask)
         # make shell correspond to the unshifted spectrum
         shell_mask = torch.fft.ifftshift(shell_mask)
@@ -457,15 +512,16 @@ class singleCET_FourierDataset(singleCET_dataset):
 
         mask = invMask*mask
 
-        assert len(mask.unique()) == 3
+        assert len(mask.unique()) == 3 # -1, 0 and 1
 
         return mask
 
     def create_batchFourierSamples(self, M):
-        mask = torch.stack(
-            [self.create_mask() for i in range(M)],
-            axis=0,
-        )
+        mask = Parallel(
+                n_jobs=5
+                )(delayed(self.create_mask)() for i in range(M))
+        mask = torch.stack(mask, axis=0)
+
         fourier_samples = self.dataF.unsqueeze(0).repeat(M, 1, 1, 1, 1)
         fourier_samples = fourier_samples * mask
         samples = torch.fft.irfftn(fourier_samples, dim=[-3, -2, -1])
@@ -475,11 +531,15 @@ class singleCET_FourierDataset(singleCET_dataset):
     def create_FourierSamples(self):
         "Create a predefined set of fourier space samples that will be sampled from on each __getitem__ call"
         print("Creating Fourier samples...")
-        n_times = self.total_samples // 5 + 1
-        samples = torch.cat(
-            [self.create_batchFourierSamples(5) for i in tqdm(range(n_times))]
-        )
-        print("Done!")
+        s = 5
+        n_times = self.total_samples // s
+        n_times = max([1, n_times])
+        
+        samples = [self.create_batchFourierSamples(s) for i in tqdm(range(n_times))]
+        
+        samples = torch.cat(samples)
+
+        print("Done! Using %i Fourier samples." %len(samples))
 
         return samples
 

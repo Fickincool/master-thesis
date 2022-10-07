@@ -86,6 +86,9 @@ dataset = hparams["dataset"]
 
 cet_path = hparams["tomo_path"]
 gt_cet_path = hparams["gt_tomo_path"]
+if gt_cet_path == 'null':
+    gt_cet_path = None
+    
 p = float(hparams["Dataloader.p"])  # Bernoulli mask probability
 dropout_p = float(hparams["p"]) # dropout probability, same as dropout_p
 subtomo_length = int(hparams["subtomo_length"])

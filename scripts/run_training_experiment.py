@@ -250,10 +250,9 @@ experiment_args = {
     },
 } """
 
-# TODO
-""" ** experiment_name = "fourierTripleMask_comparison"
+""" experiment_name = "fourierTripleMask_comparison"
 # tomogram_list = ["tomo04_dummy"]
-tomogram_list = tomophantom_dict["model14"]# + tomophantom_dict["model8"] + tomophantom_dict["model16"] 
+tomogram_list = tomophantom_dict["model8"] + tomophantom_dict["model16"] 
 
 max_epochs = 400
 experiment_args = {
@@ -315,18 +314,21 @@ experiment_args = {
         "dropout_p":0.8,
         "volumetric_scale_factor":8,
         "comment": "Fourier dropout: 0.8",
-        "input_as_target": False
+        "input_as_target": False,
+        "total_samples": 5,
+        "total_samples_prediction": 30,
+        "n_bernoulli_samples":2
     },
-    "e1": {
-        "dataset": "singleCET_dataset",
-        "epochs": max_epochs,
-        "p": 0.5,
-        "Vmask_pct":0.5,
-        "dropout_p":0.5,
-        "volumetric_scale_factor":8,
-        "comment": "Bernoulli volMask dropout: 0.5",
-        "input_as_target": False
-    },
+    # "e1": {
+    #     "dataset": "singleCET_dataset",
+    #     "epochs": max_epochs,
+    #     "p": 0.5,
+    #     "Vmask_pct":0.5,
+    #     "dropout_p":0.5,
+    #     "volumetric_scale_factor":8,
+    #     "comment": "Bernoulli volMask dropout: 0.5",
+    #     "input_as_target": False
+    # },
 }
 
 
