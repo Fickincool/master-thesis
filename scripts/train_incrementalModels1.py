@@ -22,9 +22,10 @@ train_tomos = ["tomo02", "tomo03", "tomo17"]
 concat_train_ids = sorted([s.replace("tomo", "") for s in train_tomos])
 concat_train_ids = "-".join(concat_train_ids)
 
-for i in range(5):
+for i in range(2):
     # in 2 days, at most 3 complete rounds of incremental models seem to be able to finish
-    for input_type in ["rawCET", "cryoCARE", "isoNET", "cryoCARE+isoNET"]:
+    # for input_type in ["rawCET", "cryoCARE", "isoNET", "cryoCARE+isoNET"]:
+    for input_type in ["cryoCARE+isoNET"]:
         for nPatches in range(4, 34, 4):
 
             tb_logdir = os.path.join(
@@ -82,5 +83,3 @@ for i in range(5):
             )
 
             del trainer
-        
-        break
