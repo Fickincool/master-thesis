@@ -26,7 +26,7 @@ shrec_list = ["shrec2021_model4_dummy", "shrec2021_model2_dummy"]
 
 spinach_deconv_kwargs = {
     "angpix": 14.08,
-    "defocus": 0,
+    "defocus": -0.25,
     "snrfalloff": 0.6,
     "deconvstrength": 0.45,
     "highpassnyquist": 0.02,
@@ -174,10 +174,21 @@ experiment_args = {
     },
 } """
 
-experiment_name = "realBernoulli_volMask_comparison"
+""" experiment_name = "realBernoulli_volMask_comparison"
 
 tomogram_list = [
-    "tomo04_dummy"
+    "tomoPhantom_model8_noisyGaussPoissVL",
+    "tomoPhantom_model8_noisyGaussPoissL",
+    "tomoPhantom_model8_noisyGaussPoissM",
+    "tomoPhantom_model8_noisyGaussPoissH",
+    # "tomoPhantom_model14_noisyGaussPoissVL",
+    # "tomoPhantom_model14_noisyGaussPoissL",
+    # "tomoPhantom_model14_noisyGaussPoissM",
+    # "tomoPhantom_model14_noisyGaussPoissH",
+    # "tomoPhantom_model16_noisyGaussPoissVL",
+    # "tomoPhantom_model16_noisyGaussPoissL",
+    # "tomoPhantom_model16_noisyGaussPoissM",
+    # "tomoPhantom_model16_noisyGaussPoissH",
 ]
 
 max_epochs = 400
@@ -187,60 +198,17 @@ experiment_args = {
         "dataset": "singleCET_dataset",
         "epochs": max_epochs,
         "p":0.5,
-        "Vmask_pct":0.5,
-        "dropout_p":0.5, 
-        "comment": "VolMask(0.5), p=0.5, dropout_p=0.5, Vmask_prob=1",
+        "comment": "Volumetric mask(0.3) with prob=1",
         "Vmask_probability": 1
     },
     "e1": {
         "dataset": "singleCET_dataset",
         "epochs": max_epochs,
         "p":0.5,
-        "Vmask_pct":0.5,
-        "dropout_p":0.5, 
-        "comment": "VolMask(0.5), p=0.5, dropout_p=0.5, Vmask_prob=1, deconv",
-        "Vmask_probability": 1,
-        "deconv_kwargs":spinach_deconv_kwargs
-    },
-    "e2": {
-        "dataset": "singleCET_dataset",
-        "epochs": max_epochs,
-        "p":0.5,
-        "Vmask_pct":0.5,
-        "dropout_p":0.5, 
-        "comment": "VolMask(0.5), p=0.5, dropout_p=0.5, Vmask_prob=0.5",
+        "comment": "Volumetric mask(0.3) with prob=0.5",
         "Vmask_probability": 0.5,
     },
-    "e3": {
-        "dataset": "singleCET_dataset",
-        "epochs": max_epochs,
-        "p":0.5,
-        "Vmask_pct":0.5,
-        "dropout_p":0.5, 
-        "comment": "VolMask(0.5), p=0.5, dropout_p=0.5, Vmask_prob=0.5, deconv",
-        "Vmask_probability": 0.5,
-        "deconv_kwargs":spinach_deconv_kwargs
-    },
-    "e4": {
-        "dataset": "singleCET_dataset",
-        "epochs": max_epochs,
-        "p":0.5,
-        "Vmask_pct":0.5,
-        "dropout_p":0.5, 
-        "comment": "VolMask(0.5), p=0.5, dropout_p=0.5, Vmask_prob=0",
-        "Vmask_probability": 0
-    },
-    "e5": {
-        "dataset": "singleCET_dataset",
-        "epochs": max_epochs,
-        "p":0.5,
-        "Vmask_pct":0.5,
-        "dropout_p":0.5, 
-        "comment": "VolMask(0.5), p=0.5, dropout_p=0.5, Vmask_prob=0, deconv",
-        "Vmask_probability": 0,
-        "deconv_kwargs":spinach_deconv_kwargs
-    },
-}
+} """
 
 """ experiment_name = "fourierBernoulliVolMask_dropoutLevel_comparison"
 tomogram_list = tomophantom_dict["model8"]
@@ -282,10 +250,9 @@ experiment_args = {
     },
 } """
 
-
 """ experiment_name = "fourierTripleMask_comparison"
 # tomogram_list = ["tomo04_dummy"]
-tomogram_list = tomophantom_dict["model8"] + tomophantom_dict["model14"] + tomophantom_dict["model16"] 
+tomogram_list = tomophantom_dict["model8"] + tomophantom_dict["model16"] 
 
 max_epochs = 400
 experiment_args = {
@@ -294,11 +261,10 @@ experiment_args = {
         "epochs": max_epochs,
         "p": 0.1,
         "Vmask_pct":0.5,
-        "dropout_p":0.7,
+        "dropout_p":0.3,
         "volumetric_scale_factor":8,
-        "comment": "p0.1, Vmask_p0.5, volFact8, dropout0.7",
-        "input_as_target": False,
-        "deconv_kwargs":deconv_kwargs
+        "comment": "p0.1, Vmask_p0.5, volFact8, dropout0.3",
+        "input_as_target": False
     },
     # "e1": {
     #     "dataset": "singleCET_FourierDataset",
@@ -316,11 +282,10 @@ experiment_args = {
         "epochs": max_epochs,
         "p": 0.1,
         "Vmask_pct":0.5,
-        "dropout_p":0.8,
+        "dropout_p":0.5,
         "volumetric_scale_factor":8,
-        "comment": "p0.1, Vmask_p0.5, volFact8, dropout0.8",
-        "input_as_target": False,
-        "deconv_kwargs":deconv_kwargs
+        "comment": "p0.1, Vmask_p0.5, volFact8, dropout0.5",
+        "input_as_target": False
     },
     # "e3": {
     #     "dataset": "singleCET_FourierDataset",
@@ -336,6 +301,37 @@ experiment_args = {
 
 } """
 
+experiment_name = "raw_denoising_pilot"
+tomogram_list = ["tomo04"]
+max_epochs = 10
+
+experiment_args = {
+    "e0": {
+        "dataset": "singleCET_FourierDataset",
+        "epochs": max_epochs,
+        "p": 0.1,
+        "Vmask_pct":0.5,
+        "dropout_p":0.8,
+        "volumetric_scale_factor":8,
+        "comment": "Fourier dropout: 0.8",
+        "input_as_target": False,
+        "total_samples": 5,
+        "total_samples_prediction": 30,
+        "n_bernoulli_samples":2
+    },
+    # "e1": {
+    #     "dataset": "singleCET_dataset",
+    #     "epochs": max_epochs,
+    #     "p": 0.5,
+    #     "Vmask_pct":0.5,
+    #     "dropout_p":0.5,
+    #     "volumetric_scale_factor":8,
+    #     "comment": "Bernoulli volMask dropout: 0.5",
+    #     "input_as_target": False
+    # },
+}
+
+
 experiment_logdir = "/home/ubuntu/Thesis/data/S2SDenoising/experiment_args"
 
 default_args = {
@@ -347,7 +343,7 @@ default_args = {
     "total_samples": 100,
     "total_samples_prediction": 150,
     "n_bernoulli_samples_prediction": 1,
-    "volumetric_scale_factor": 8,
+    "volumetric_scale_factor": 4,
     "Vmask_probability": 0,
     "Vmask_pct": 0.3,
     "subtomo_length": 96,
