@@ -251,8 +251,8 @@ experiment_args = {
 } """
 
 """ experiment_name = "fourierTripleMask_comparison"
-# tomogram_list = ["tomo04_dummy"]
-tomogram_list = tomophantom_dict["model8"] + tomophantom_dict["model16"] 
+tomogram_list = ["tomo04_dummy"]
+# tomogram_list = tomophantom_dict["model8"] + tomophantom_dict["model16"] 
 
 max_epochs = 400
 experiment_args = {
@@ -261,47 +261,47 @@ experiment_args = {
         "epochs": max_epochs,
         "p": 0.1,
         "Vmask_pct":0.5,
-        "dropout_p":0.3,
+        "dropout_p":0.7,
         "volumetric_scale_factor":8,
-        "comment": "p0.1, Vmask_p0.5, volFact8, dropout0.3",
+        "comment": "p0.1, Vmask_p0.5, volFact8, dropout0.7",
         "input_as_target": False
     },
-    # "e1": {
-    #     "dataset": "singleCET_FourierDataset",
-    #     "epochs": max_epochs,
-    #     "p": 0.1,
-    #     "Vmask_pct":0.5,
-    #     "dropout_p":0.7,
-    #     "volumetric_scale_factor":8,
-    #     "comment": "p0.1, Vmask_p0.5, volFact8, dropout0.7, deconv",
-    #     "input_as_target": False,
-    #     "deconv_kwargs":spinach_deconv_kwargs
-    # },
+    "e1": {
+        "dataset": "singleCET_FourierDataset",
+        "epochs": max_epochs,
+        "p": 0.1,
+        "Vmask_pct":0.5,
+        "dropout_p":0.7,
+        "volumetric_scale_factor":8,
+        "comment": "p0.1, Vmask_p0.5, volFact8, dropout0.7, deconv",
+        "input_as_target": False,
+        "deconv_kwargs":spinach_deconv_kwargs
+    },
     "e2": {
         "dataset": "singleCET_FourierDataset",
         "epochs": max_epochs,
         "p": 0.1,
         "Vmask_pct":0.5,
-        "dropout_p":0.5,
+        "dropout_p":0.8,
         "volumetric_scale_factor":8,
-        "comment": "p0.1, Vmask_p0.5, volFact8, dropout0.5",
+        "comment": "p0.1, Vmask_p0.5, volFact8, dropout0.8",
         "input_as_target": False
     },
-    # "e3": {
-    #     "dataset": "singleCET_FourierDataset",
-    #     "epochs": max_epochs,
-    #     "p": 0.1,
-    #     "Vmask_pct":0.5,
-    #     "dropout_p":0.8,
-    #     "volumetric_scale_factor":8,
-    #     "comment": "p0.1, Vmask_p0.5, volFact8, dropout0.8, deconv",
-    #     "input_as_target": False,
-    #     "deconv_kwargs":spinach_deconv_kwargs
-    # },
+    "e3": {
+        "dataset": "singleCET_FourierDataset",
+        "epochs": max_epochs,
+        "p": 0.1,
+        "Vmask_pct":0.5,
+        "dropout_p":0.8,
+        "volumetric_scale_factor":8,
+        "comment": "p0.1, Vmask_p0.5, volFact8, dropout0.8, deconv",
+        "input_as_target": False,
+        "deconv_kwargs":spinach_deconv_kwargs
+    },
 
 } """
 
-experiment_name = "raw_denoising_pilot"
+""" experiment_name = "raw_denoising_pilot"
 tomogram_list = ["tomo04"]
 max_epochs = 10
 
@@ -329,8 +329,38 @@ experiment_args = {
     #     "comment": "Bernoulli volMask dropout: 0.5",
     #     "input_as_target": False
     # },
-}
+} """
 
+
+experiment_name = "structuredNoise_comparison"
+tomogram_list = ["tomoPhantom_model8_noisyGaussPoissVL_Perlin"]
+# tomogram_list = tomophantom_dict["model8"] + tomophantom_dict["model16"] 
+
+max_epochs = 400
+experiment_args = {
+    "e0": {
+        "dataset": "singleCET_FourierDataset",
+        "epochs": max_epochs,
+        "p": 0.1,
+        "Vmask_pct":0.5,
+        "dropout_p":0.7,
+        "volumetric_scale_factor":8,
+        "comment": "p0.1, Vmask_p0.5, volFact8, dropout0.7",
+        "input_as_target": False
+    },
+    "e1": {
+        "dataset": "singleCET_dataset",
+        "epochs": max_epochs,
+        "volumetric_scale_factor": 8,
+        "p": 0.5,
+        "dropout_p": 0.5,
+        "Vmask_probability": 1,
+        "Vmask_pct": 0.5,
+        "comment": "VolMask(0.5), p=0.5, dropout_p=0.5, Vmask_prob=1",
+        "input_as_target": False
+    },
+
+}
 
 experiment_logdir = "/home/ubuntu/Thesis/data/S2SDenoising/experiment_args"
 
@@ -342,7 +372,7 @@ default_args = {
     "n_bernoulli_samples": 6,
     "total_samples": 100,
     "total_samples_prediction": 150,
-    "n_bernoulli_samples_prediction": 1,
+    "n_bernoulli_samples_prediction": 2,
     "volumetric_scale_factor": 4,
     "Vmask_probability": 0,
     "Vmask_pct": 0.3,

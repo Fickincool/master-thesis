@@ -906,7 +906,7 @@ class randomRotation3D_fourierSamples(object):
 
         subtomo_rotated = torch.stack(subtomo_rotated).reshape(subtomo.shape)
         target_rotated = torch.stack(target_rotated).reshape(target.shape)
-        gt_subtomo_rotated = torch.stack(gt_subtomo_rotated).reshape(gt_subtomo.shape)
+        gt_subtomo_rotated = torch.stack(gt_subtomo_rotated).reshape(subtomo.shape)
 
         # deal with no gt_subtomo case. Maybe not the best, since we calculate 1 too many rotations
         if (gt_subtomo_rotated == 0).all():

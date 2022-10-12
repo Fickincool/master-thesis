@@ -127,7 +127,6 @@ if args["dataset"] == "singleCET_dataset":
     model = Denoising_3DUNet(loss_fn, lr, n_features, dropout_p, n_bernoulli_samples)
     model_name = "s2sDenoise3D"
     transform = randomRotation3D(0.5)
-    my_dataset.transform = transform
 
 elif args["dataset"] == "singleCET_FourierDataset":
     my_dataset = singleCET_FourierDataset(
@@ -173,7 +172,7 @@ elif args["dataset"] == "singleCET_ProjectedDataset":
     model_name = "s2sDenoise3D_simulatedN2N"
     transform = randomRotation3D_fourierSamples(0.5)
 
-
+my_dataset.transform = transform
 ##################################### Training ####################################################
 
 s2s_trainer = denoisingTrainer(
