@@ -38,6 +38,7 @@ total_samples = args["total_samples_prediction"]
 predict_N_times = args["predict_N_times"]
 
 path_to_fourier_samples = args["path_to_fourier_samples"]
+clip = args["clip"]
 
 tomo_name = args["tomo_name"]
 
@@ -106,6 +107,7 @@ if dataset == "singleCET_dataset":
         transform=None,
         n_shift=0,
         gt_tomo_path=gt_cet_path,
+        clip=clip,
         **deconv_kwargs
     )
 
@@ -124,6 +126,7 @@ elif dataset == "singleCET_FourierDataset":
         gt_tomo_path=gt_cet_path,
         bernoulliMask_prob=bernoulliMask_prob,
         path_to_fourier_samples=path_to_fourier_samples,
+        clip=clip,
         **deconv_kwargs
     )
 

@@ -54,6 +54,7 @@ num_gpus = args["num_gpus"]
 predict_simRecon = args["predict_simRecon"]
 use_deconv_as_target = args["use_deconv_as_target"]
 path_to_fourier_samples = args["path_to_fourier_samples"]
+clip = args["clip"]
 
 bernoulliMask_prob = args["bernoulliMask_prob"]
 input_as_target = args["input_as_target"]
@@ -86,6 +87,7 @@ if args["dataset"] == "singleCET_dataset":
         transform=None,
         n_shift=n_shift,
         gt_tomo_path=gt_cet_path,
+        clip=clip,
         **deconv_kwargs
     )
 
@@ -111,6 +113,7 @@ elif args["dataset"] == "singleCET_FourierDataset":
         bernoulliMask_prob=bernoulliMask_prob,
         input_as_target=input_as_target,
         path_to_fourier_samples=path_to_fourier_samples,
+        clip=clip,
         **deconv_kwargs
     )
 

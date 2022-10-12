@@ -339,12 +339,20 @@ tomogram_list = ["tomo04_dummy_s2sDenoised"]
 max_epochs = 50
 make_fourierSamples_beforeTraining = True
 experiment_args = {
+    # "e0": {
+    #     "dataset": "singleCET_dataset",
+    #     "epochs": max_epochs,
+    #     "p":0.5,
+    #     "comment": "Volumetric mask(0.3) with prob=1",
+    #     "Vmask_probability": 1,
+    # },
     "e0": {
         "dataset": "singleCET_dataset",
         "epochs": max_epochs,
         "p":0.5,
-        "comment": "Volumetric mask(0.3) with prob=1",
-        "Vmask_probability": 1
+        "comment": "Volumetric mask(0.3) with prob=1, no clip",
+        "Vmask_probability": 1,
+        "clip":False,
     },
 }
 
@@ -377,7 +385,8 @@ default_args = {
     "bernoulliMask_prob": 1,
     "input_as_target": None,
     "path_to_fourier_samples": None,
-    "predict_N_times":100
+    "predict_N_times":100,
+    "clip":True
 }
 
 

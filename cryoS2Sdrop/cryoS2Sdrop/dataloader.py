@@ -59,8 +59,8 @@ class singleCET_dataset(Dataset):
         self.gt_tomo_path = gt_tomo_path
         if gt_tomo_path is not None:
             self.gt_data = torch.tensor(read_array(gt_tomo_path))
-            if clip:
-                self.gt_data = self.clip(self.gt_data)
+            # if clip:
+            self.gt_data = self.clip(self.gt_data)
             self.gt_data = self.standardize(self.gt_data)
         else:
             self.gt_data = None
