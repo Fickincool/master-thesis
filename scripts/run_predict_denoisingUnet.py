@@ -3,7 +3,7 @@ import json
 
 
 ################### SETUP ############################################
-experiment_name = "raw_denoising_pilot"
+experiment_name = "raw_denoising"
 tomogram_list = ["tomo04"]
 
 experiment_args = {
@@ -11,7 +11,10 @@ experiment_args = {
     "e0": {
         "version": "version_0",
         "resample_patch_each_iter": True,
-        "total_samples_prediction":30
+        "total_samples_prediction":20,
+        "n_bernoulli_samples_prediction": 10,
+        "predict_N_times":100,
+        "path_to_fourier_samples":'/home/ubuntu/Thesis/data/S2SDenoising/model_logs/tomo04/raw_denoising/FourierSamples/singleCET_FourierDataset.samples'
     }
 }
 ######################################################################
@@ -22,7 +25,8 @@ default_args = {
     "version": None,
     "resample_patch_each_iter": True,
     "total_samples_prediction": 150,
-    "predict_on_saved_fourier_samples": None,
+    "path_to_fourier_samples": None,
+    "predict_N_times":250
 }
 
 

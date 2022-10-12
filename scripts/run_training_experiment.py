@@ -1,5 +1,6 @@
 import os
 import json
+from cryoS2Sdrop.make_samples import make_fourier_samples
 
 tomophantom_dict = {
     "model8": [
@@ -301,10 +302,10 @@ experiment_args = {
 
 } """
 
-experiment_name = "raw_denoising_pilot"
+""" experiment_name = "raw_denoising"
 tomogram_list = ["tomo04"]
-max_epochs = 10
-
+max_epochs = 50
+make_fourierSamples_beforeTraining = True
 experiment_args = {
     "e0": {
         "dataset": "singleCET_FourierDataset",
@@ -315,9 +316,10 @@ experiment_args = {
         "volumetric_scale_factor":8,
         "comment": "Fourier dropout: 0.8",
         "input_as_target": False,
-        "total_samples": 5,
-        "total_samples_prediction": 30,
-        "n_bernoulli_samples":2
+        "total_samples": 20,
+        "total_samples_prediction": 20,
+        "n_bernoulli_samples":6,
+        "n_bernoulli_samples_prediction":10
     },
     # "e1": {
     #     "dataset": "singleCET_dataset",
@@ -329,6 +331,21 @@ experiment_args = {
     #     "comment": "Bernoulli volMask dropout: 0.5",
     #     "input_as_target": False
     # },
+}
+ """
+
+experiment_name = "doubleDenoising_pilot"
+tomogram_list = ["tomo04_dummy_s2sDenoised"]
+max_epochs = 50
+make_fourierSamples_beforeTraining = True
+experiment_args = {
+    "e0": {
+        "dataset": "singleCET_dataset",
+        "epochs": max_epochs,
+        "p":0.5,
+        "comment": "Volumetric mask(0.3) with prob=1",
+        "Vmask_probability": 1
+    },
 }
 
 
@@ -359,7 +376,8 @@ default_args = {
     "comment": None,
     "bernoulliMask_prob": 1,
     "input_as_target": None,
-    "predict_on_saved_fourier_samples": None,
+    "path_to_fourier_samples": None,
+    "predict_N_times":100
 }
 
 
@@ -387,5 +405,11 @@ if __name__ == "__main__":
             for arg in new_args:
                 args[arg] = new_args[arg]
 
+            if "Fourier" in args["dataset"] and make_fourierSamples_beforeTraining:
+                samples_path = make_fourier_samples(args, experiment_name)
+                args["path_to_fourier_samples"] = samples_path
+
             # run code
             main(experiment_name, args)
+
+            # os.system('rm %s' %samples_path)

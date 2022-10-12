@@ -1,5 +1,4 @@
 import os
-import yaml
 import matplotlib.pyplot as plt
 import numpy as np
 from tqdm import tqdm
@@ -22,6 +21,7 @@ from cryoS2Sdrop.dataloader import randomRotation3D, randomRotation3D_fourierSam
 from cryoS2Sdrop.losses import self2self_L2Loss, self2selfLoss, self2selfLoss_noMask
 from cryoS2Sdrop.model import Denoising_3DUNet, Denoising_3DUNet_v2
 from cryoS2Sdrop.predict import load_model, predict_full_tomogram
+from cryoS2Sdrop.misc import parse_cet_paths
 from pytorch_msssim import ssim
 from torchmetrics.functional import peak_signal_noise_ratio
 import sys
@@ -53,6 +53,7 @@ lr = args["lr"]
 num_gpus = args["num_gpus"]
 predict_simRecon = args["predict_simRecon"]
 use_deconv_as_target = args["use_deconv_as_target"]
+path_to_fourier_samples = args["path_to_fourier_samples"]
 
 bernoulliMask_prob = args["bernoulliMask_prob"]
 input_as_target = args["input_as_target"]
@@ -61,41 +62,7 @@ tomo_name = args["tomo_name"]
 
 deconv_kwargs = args["deconv_kwargs"]
 
-if tomo_name.startswith("tomoPhantom"):
-
-    cet_path = os.path.join(
-        PARENT_PATH, "data/S2SDenoising/dummy_tomograms/%s.mrc" % tomo_name
-    )
-    model_name = tomo_name.split("_")[1]
-
-    gt_cet_path = os.path.join(
-        PARENT_PATH, "data/S2SDenoising/dummy_tomograms/tomoPhantom_%s.mrc" % model_name
-    )
-
-elif tomo_name.startswith("tomo"):
-    if "dummy" in tomo_name:
-        cet_path = os.path.join(
-            PARENT_PATH, "data/S2SDenoising/dummy_tomograms/%s.mrc" % tomo_name
-        )
-        _name = tomo_name.split("_")[0]
-        gt_cet_path = os.path.join(
-            PARENT_PATH, "data/S2SDenoising/dummy_tomograms/%s_cryoCAREDummy.mrc" % _name
-        )
-    else:
-        cet_path = os.path.join(
-            PARENT_PATH, "data/raw_cryo-ET/%s.mrc" % tomo_name
-        )
-        gt_cet_path = None
-
-elif tomo_name.startswith("shrec2021"):
-    cet_path = os.path.join(
-        PARENT_PATH, "data/S2SDenoising/dummy_tomograms/%s.mrc" % tomo_name
-    )
-    _name = tomo_name.split("_")[1]
-    gt_cet_path = os.path.join(
-        PARENT_PATH,
-        "data/S2SDenoising/dummy_tomograms/shrec2021_%s_gtDummy.mrc" % _name,
-    )
+cet_path, gt_cet_path = parse_cet_paths(PARENT_PATH, tomo_name)
 ##################################### Model and dataloader ####################################################
 
 tensorboard_logdir = os.path.join(
@@ -127,7 +94,6 @@ if args["dataset"] == "singleCET_dataset":
     model = Denoising_3DUNet(loss_fn, lr, n_features, dropout_p, n_bernoulli_samples)
     model_name = "s2sDenoise3D"
     transform = randomRotation3D(0.5)
-    my_dataset.transform = transform
 
 elif args["dataset"] == "singleCET_FourierDataset":
     my_dataset = singleCET_FourierDataset(
@@ -144,6 +110,7 @@ elif args["dataset"] == "singleCET_FourierDataset":
         gt_tomo_path=gt_cet_path,
         bernoulliMask_prob=bernoulliMask_prob,
         input_as_target=input_as_target,
+        path_to_fourier_samples=path_to_fourier_samples,
         **deconv_kwargs
     )
 
@@ -173,7 +140,7 @@ elif args["dataset"] == "singleCET_ProjectedDataset":
     model_name = "s2sDenoise3D_simulatedN2N"
     transform = randomRotation3D_fourierSamples(0.5)
 
-
+my_dataset.transform = transform
 ##################################### Training ####################################################
 
 s2s_trainer = denoisingTrainer(
