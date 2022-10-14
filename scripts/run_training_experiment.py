@@ -332,9 +332,8 @@ experiment_args = {
 } """
 
 
-experiment_name = "structuredNoise_comparison"
-tomogram_list = ["tomoPhantom_model8_noisyGaussPoissVL_Perlin"]
-# tomogram_list = tomophantom_dict["model8"] + tomophantom_dict["model16"] 
+experiment_name = "samplingStrategy_comparison"
+tomogram_list = shrec_list
 
 max_epochs = 400
 experiment_args = {
@@ -357,7 +356,8 @@ experiment_args = {
         "Vmask_probability": 1,
         "Vmask_pct": 0.5,
         "comment": "VolMask(0.5), p=0.5, dropout_p=0.5, Vmask_prob=1",
-        "input_as_target": False
+        "input_as_target": False,
+        "volumetric_scale_factor":8
     },
 
 }
