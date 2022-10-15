@@ -91,6 +91,7 @@ def predict_patch0(idx, p0, singleCET_dataset, model, N):
     if len(subtomo.shape) == 4:  # the projected dataset yields this type
         subtomo = subtomo.unsqueeze(0)  # equivalent to having "1 Bernoulli sample"
     # we want to average each patch over N Bernoulli samples, typically N >> M
+    subtomo = subtomo.cuda()
     M = len(subtomo)
     # effective number of samples
     n_times = N // M + 1

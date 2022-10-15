@@ -36,7 +36,10 @@ n_bernoulli_samples = args["n_bernoulli_samples_prediction"]
 total_samples = args["total_samples_prediction"]
 predict_N_times = args["predict_N_times"]
 
-predict_on_saved_fourier_samples = args["predict_on_saved_fourier_samples"]
+predict_N_times = args["predict_N_times"]
+
+path_to_fourier_samples = args["path_to_fourier_samples"]
+clip = args["clip"]
 
 tomo_name = args["tomo_name"]
 
@@ -68,12 +71,6 @@ logdir = os.path.join(tensorboard_logdir, version)
 with open(os.path.join(logdir, "experiment_args.json"), "r") as f:
     exp_args = json.load(f)
 
-if predict_on_saved_fourier_samples:
-    path_to_fourier_samples = os.path.join(logdir, "singleCET_FourierDataset.samples")
-
-else:
-    path_to_fourier_samples = None
-
 deconv_kwargs = exp_args["deconv_kwargs"]
 predict_simRecon = exp_args["predict_simRecon"]
 use_deconv_as_target = exp_args["use_deconv_as_target"]
@@ -89,7 +86,7 @@ cet_path = hparams["tomo_path"]
 gt_cet_path = hparams["gt_tomo_path"]
 if gt_cet_path == 'null':
     gt_cet_path = None
-    
+
 p = float(hparams["Dataloader.p"])  # Bernoulli mask probability
 dropout_p = float(hparams["p"]) # dropout probability, same as dropout_p
 subtomo_length = int(hparams["subtomo_length"])
@@ -111,6 +108,7 @@ if dataset == "singleCET_dataset":
         transform=None,
         n_shift=0,
         gt_tomo_path=gt_cet_path,
+        clip=clip,
         **deconv_kwargs
     )
 
@@ -129,6 +127,7 @@ elif dataset == "singleCET_FourierDataset":
         gt_tomo_path=gt_cet_path,
         bernoulliMask_prob=bernoulliMask_prob,
         path_to_fourier_samples=path_to_fourier_samples,
+        clip=clip,
         **deconv_kwargs
     )
 

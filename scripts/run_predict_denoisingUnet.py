@@ -3,15 +3,18 @@ import json
 
 
 ################### SETUP ############################################
-experiment_name = "raw_denoising_pilot"
-tomogram_list = ["tomo04"]
+experiment_name = "doubleDenoising_pilot"
+tomogram_list = ["tomo04_dummy_s2sDenoised"]
 
 experiment_args = {
     # corresponding version of the model we want to use for prediction
     "e0": {
-        "version": "version_0",
+        "version": "version_1",
         "resample_patch_each_iter": True,
-        "total_samples_prediction":30
+        "total_samples_prediction":150,
+        "n_bernoulli_samples_prediction": 2,
+        "predict_N_times":100,
+        "clip":False
     }
 }
 ######################################################################
