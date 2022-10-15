@@ -59,6 +59,10 @@ class singleCET_dataset(Dataset):
         self.gt_tomo_path = gt_tomo_path
         if gt_tomo_path is not None:
             self.gt_data = torch.tensor(read_array(gt_tomo_path))
+            # the shrec data ground truth values are inverted
+            if "shrec2021" in self.gt_tomo_path:
+                self.gt_data = -1*self.gt_data
+                self.gt_data = self.gt_data - self.gt_data.min()
             if clip:
                 self.gt_data = self.clip(self.gt_data)
             self.gt_data = self.standardize(self.gt_data)
@@ -133,7 +137,7 @@ class singleCET_dataset(Dataset):
         scaled = (X - X.min()) / (X.max() - X.min() + 1e-8)
         return scaled
 
-    def clip(self, X, low=0.005, high=0.995):
+    def clip(self, X, low=0.0005, high=0.9995):
         # works with tensors =)
         return np.clip(X, np.quantile(X, low), np.quantile(X, high))
 

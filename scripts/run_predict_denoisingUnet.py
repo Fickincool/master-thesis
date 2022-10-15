@@ -22,7 +22,9 @@ default_args = {
     "version": None,
     "resample_patch_each_iter": True,
     "total_samples_prediction": 150,
-    "predict_on_saved_fourier_samples": None,
+    "path_to_fourier_samples": None,
+    "predict_N_times":250,
+    "clip":True,
 }
 
 

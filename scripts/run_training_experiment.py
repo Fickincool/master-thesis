@@ -22,7 +22,8 @@ tomophantom_dict = {
     ],
 }
 
-shrec_list = ["shrec2021_model4_dummy", "shrec2021_model2_dummy"]
+# shrec_list = ["shrec2021_model4_dummy", "shrec2021_model2_dummy"]
+shrec_list = ["shrec2021_model_4", "shrec2021_model_2"]
 
 spinach_deconv_kwargs = {
     "angpix": 14.08,
@@ -176,20 +177,7 @@ experiment_args = {
 
 """ experiment_name = "realBernoulli_volMask_comparison"
 
-tomogram_list = [
-    "tomoPhantom_model8_noisyGaussPoissVL",
-    "tomoPhantom_model8_noisyGaussPoissL",
-    "tomoPhantom_model8_noisyGaussPoissM",
-    "tomoPhantom_model8_noisyGaussPoissH",
-    # "tomoPhantom_model14_noisyGaussPoissVL",
-    # "tomoPhantom_model14_noisyGaussPoissL",
-    # "tomoPhantom_model14_noisyGaussPoissM",
-    # "tomoPhantom_model14_noisyGaussPoissH",
-    # "tomoPhantom_model16_noisyGaussPoissVL",
-    # "tomoPhantom_model16_noisyGaussPoissL",
-    # "tomoPhantom_model16_noisyGaussPoissM",
-    # "tomoPhantom_model16_noisyGaussPoissH",
-]
+tomogram_list = ["tomo04_dummy"]
 
 max_epochs = 400
 
@@ -335,7 +323,7 @@ experiment_args = {
 experiment_name = "samplingStrategy_comparison"
 tomogram_list = shrec_list
 
-max_epochs = 400
+max_epochs = 150
 experiment_args = {
     "e0": {
         "dataset": "singleCET_FourierDataset",
@@ -345,7 +333,10 @@ experiment_args = {
         "dropout_p":0.7,
         "volumetric_scale_factor":8,
         "comment": "p0.1, Vmask_p0.5, volFact8, dropout0.7",
-        "input_as_target": False
+        "input_as_target": False,
+        "total_samples":50,
+        "n_bernoulli_samples_prediction":12,
+        "predict_N_times":150
     },
     "e1": {
         "dataset": "singleCET_dataset",
@@ -357,7 +348,9 @@ experiment_args = {
         "Vmask_pct": 0.5,
         "comment": "VolMask(0.5), p=0.5, dropout_p=0.5, Vmask_prob=1",
         "input_as_target": False,
-        "volumetric_scale_factor":8
+        "volumetric_scale_factor":8,
+        "n_bernoulli_samples_prediction":12,
+        "predict_N_times":150
     },
 
 }
@@ -372,8 +365,8 @@ default_args = {
     "n_bernoulli_samples": 6,
     "total_samples": 100,
     "total_samples_prediction": 150,
-    "n_bernoulli_samples_prediction": 2,
-    "volumetric_scale_factor": 4,
+    "n_bernoulli_samples_prediction": 1,
+    "volumetric_scale_factor": 8,
     "Vmask_probability": 0,
     "Vmask_pct": 0.3,
     "subtomo_length": 96,
@@ -389,7 +382,9 @@ default_args = {
     "comment": None,
     "bernoulliMask_prob": 1,
     "input_as_target": None,
-    "predict_on_saved_fourier_samples": None,
+    "path_to_fourier_samples": None,
+    "predict_N_times":100,
+    "clip":True
 }
 
 

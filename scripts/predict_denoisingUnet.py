@@ -34,6 +34,7 @@ exp_name = sys.argv[2]
 
 n_bernoulli_samples = args["n_bernoulli_samples_prediction"]
 total_samples = args["total_samples_prediction"]
+predict_N_times = args["predict_N_times"]
 
 predict_on_saved_fourier_samples = args["predict_on_saved_fourier_samples"]
 
@@ -150,7 +151,7 @@ print("Predicting full tomogram...")
 # this is taking two means: first per bernoulli batches, and then again for each time the model was run
 # total predictions is the inner_range*n_bernoulli_samples
 denoised_tomo = predict_full_tomogram(
-    my_dataset, model, resample_patch_each_iter, N=250
+    my_dataset, model, resample_patch_each_iter, N=predict_N_times
 )
 print("Done!")
 

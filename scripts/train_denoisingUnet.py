@@ -88,14 +88,24 @@ elif tomo_name.startswith("tomo"):
         gt_cet_path = None
 
 elif tomo_name.startswith("shrec2021"):
-    cet_path = os.path.join(
-        PARENT_PATH, "data/S2SDenoising/dummy_tomograms/%s.mrc" % tomo_name
-    )
-    _name = tomo_name.split("_")[1]
-    gt_cet_path = os.path.join(
-        PARENT_PATH,
-        "data/S2SDenoising/dummy_tomograms/shrec2021_%s_gtDummy.mrc" % _name,
-    )
+    if "dummy" in tomo_name:
+        cet_path = os.path.join(
+            PARENT_PATH, "data/S2SDenoising/dummy_tomograms/%s.mrc" % tomo_name
+        )
+        _name = tomo_name.split("_")[1]
+        gt_cet_path = os.path.join(
+            PARENT_PATH,
+            "data/S2SDenoising/dummy_tomograms/shrec2021_%s_gtDummy.mrc" % _name,
+        )
+    else:
+        _name = tomo_name.split('shrec2021_')[1]
+        cet_path = os.path.join(
+            PARENT_PATH, "data/shrec2021/%s/reconstruction.mrc" % _name
+        )
+        gt_cet_path = os.path.join(
+            PARENT_PATH,
+            "data/shrec2021/%s/grandmodel.mrc" % _name,
+        )
 ##################################### Model and dataloader ####################################################
 
 tensorboard_logdir = os.path.join(
