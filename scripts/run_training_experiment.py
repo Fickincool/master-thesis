@@ -324,7 +324,7 @@ experiment_args = {
 
 experiment_name = "samplingStrategy_comparison"
 tomogram_list = shrec_list
-
+make_fourierSamples_beforeTraining = True
 max_epochs = 150
 experiment_args = {
     "e0": {
@@ -336,7 +336,7 @@ experiment_args = {
         "volumetric_scale_factor":8,
         "comment": "p0.1, Vmask_p0.5, volFact8, dropout0.7",
         "input_as_target": False,
-        "total_samples":50,
+        "total_samples":60,
         "n_bernoulli_samples_prediction":12,
         "predict_N_times":150
     },
