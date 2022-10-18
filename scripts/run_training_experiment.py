@@ -302,8 +302,8 @@ experiment_args = {
 
 } """
 
-""" experiment_name = "raw_denoising"
-tomogram_list = ["tomo04"]
+experiment_name = "raw_denoising"
+tomogram_list = ["tomo32", "tomo10"]
 max_epochs = 50
 make_fourierSamples_beforeTraining = True
 experiment_args = {
@@ -332,9 +332,9 @@ experiment_args = {
     #     "input_as_target": False
     # },
 }
- """
 
-experiment_name = "doubleDenoising_pilot"
+
+""" experiment_name = "doubleDenoising_pilot"
 tomogram_list = ["tomo04_dummy_s2sDenoised"]
 max_epochs = 50
 make_fourierSamples_beforeTraining = True
@@ -354,7 +354,7 @@ experiment_args = {
         "Vmask_probability": 1,
         "clip":False,
     },
-}
+} """
 
 
 experiment_logdir = "/home/ubuntu/Thesis/data/S2SDenoising/experiment_args"
