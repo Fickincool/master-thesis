@@ -14,7 +14,7 @@ TODO: add examples of usage.
 
 [Install Miniconda](https://docs.conda.io/en/latest/miniconda.html), then add some channels thet are important for conda installation by running:
 
-`conda config --add channels pytorch simpleitk anaconda conda-forge`
+`conda config --add channels pytorch,simpleitk,anaconda,conda-forge`
 
 Afterwards run
 
