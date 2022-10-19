@@ -12,11 +12,15 @@ TODO: add examples of usage.
 
 ## Installation 
 
-Install Miniconda and then the environment found in this folder with
+[Install Miniconda](https://docs.conda.io/en/latest/miniconda.html), then add some channels thet are important for conda installation by running:
 
-`conda env create -f environment_jero.yml`
+`conda config --add channels pytorch simpleitk anaconda conda-forge`
 
-Install some code I developed for my use case:
+Afterwards run
+
+`conda create --name <yourEnvNameHere> --file master-thesis/requirements_S2SdDenoising.txt`
+
+Finally, install some code I developed for my use case:
 
 `cd cryoS2Sdrop; pip install --editable ./`
 `cd tomoSegmentPipeline; pip install --editable ./`
