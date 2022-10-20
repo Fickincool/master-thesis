@@ -137,7 +137,9 @@ class singleCET_dataset(Dataset):
         scaled = (X - X.min()) / (X.max() - X.min() + 1e-8)
         return scaled
 
-    def clip(self, X, low=0.0005, high=0.9995):
+    # for SHREC we used 0.0005 and 0.9995
+    # spinach and tomoPhantom 0.005, 0.995
+    def clip(self, X, low=0.005, high=0.995):
         # works with tensors =)
         return np.clip(X, np.quantile(X, low), np.quantile(X, high))
 

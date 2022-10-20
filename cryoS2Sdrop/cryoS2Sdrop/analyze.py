@@ -86,8 +86,9 @@ def standardize(X: torch.tensor):
 
     return new_X
 
-
-def clip(X, low=0.0005, high=0.9995):
+# for SHREC we used 0.0005 and 0.9995
+# spinach and tomoPhantom 0.005, 0.995
+def clip(X, low=0.005, high=0.995):
     # works with tensors =)
     return np.clip(X, np.quantile(X, low), np.quantile(X, high))
 
