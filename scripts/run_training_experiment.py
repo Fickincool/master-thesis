@@ -178,7 +178,7 @@ experiment_args = {
     },
 } """
 
-""" experiment_name = "realBernoulli_volMask_comparison"
+experiment_name = "realBernoulli_volMask_comparison"
 
 tomogram_list = ["tomo04_dummy"]
 
@@ -188,18 +188,15 @@ experiment_args = {
     "e0": {
         "dataset": "singleCET_dataset",
         "epochs": max_epochs,
-        "p":0.5,
-        "comment": "Volumetric mask(0.3) with prob=1",
-        "Vmask_probability": 1
-    },
-    "e1": {
-        "dataset": "singleCET_dataset",
-        "epochs": max_epochs,
-        "p":0.5,
-        "comment": "Volumetric mask(0.3) with prob=0.5",
-        "Vmask_probability": 0.5,
-    },
-} """
+        "p": 0.5,
+        "dropout_p": 0.5,
+        "Vmask_pct": 0.5,
+        "Vmask_probability": 0,
+        "deconv_kwargs": spinach_deconv_kwargs,
+        "predict_N_times":250,
+        "comment": "VolMask(0.5), p=0.5, dropout_p=0.5, Vmask_prob=0, deconv",
+    }
+}
 
 """ experiment_name = "fourierBernoulliVolMask_dropoutLevel_comparison"
 tomogram_list = tomophantom_dict["model8"]
@@ -323,8 +320,7 @@ experiment_args = {
     # },
 } """
 
-
-experiment_name = "samplingStrategy_comparison"
+""" experiment_name = "samplingStrategy_comparison"
 tomogram_list = shrec_list
 make_fourierSamples_beforeTraining = True
 max_epochs = 150
@@ -356,8 +352,7 @@ experiment_args = {
         "n_bernoulli_samples_prediction":12,
         "predict_N_times":150
     },
-
-}
+} """
 
 experiment_logdir = "/home/ubuntu/Thesis/data/S2SDenoising/experiment_args"
 

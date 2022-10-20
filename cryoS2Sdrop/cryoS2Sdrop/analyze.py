@@ -86,8 +86,9 @@ def standardize(X: torch.tensor):
 
     return new_X
 
-
-def clip(X, low=0.0005, high=0.9995):
+# for SHREC we used 0.0005 and 0.9995
+# spinach and tomoPhantom 0.005, 0.995
+def clip(X, low=0.005, high=0.995):
     # works with tensors =)
     return np.clip(X, np.quantile(X, low), np.quantile(X, high))
 
@@ -185,11 +186,31 @@ def parse_tomo_name(name):
 
     return name
 
+def _tomo_name(tomo_path):
+
+    divided_path = tomo_path.split("/")
+
+    if 'shrec2021/model_' in tomo_path:
+        shrec = divided_path[-3]
+        model_num = divided_path[-2]
+        tomo_name = shrec+'_'+model_num
+    else:
+        tomo_name = divided_path[-1].replace(".mrc", "")
+    
+    return tomo_name
+
+def _parse_pred_path(logdir, version, tomo_name):
+    if tomo_name.startswith('shrec2021_model_'):
+        pred_path = pred_path = logdir + "%s/reconstruction_s2sDenoised.mrc" % (version)
+    else:
+        pred_path = logdir + "%s/%s_s2sDenoised.mrc" % (version, tomo_name)
+        
+    return pred_path
 
 def parse_pred_tomo_path(data_log):
 
     version = data_log.version.values
-    tomo_name = data_log.tomo_path.map(lambda x: x.split("/")[-1].replace(".mrc", ""))
+    tomo_name = data_log.tomo_path.map(lambda x: _tomo_name(x))
     exp_name = data_log.model.unique()[0]
     exp_name = len(tomo_name) * [exp_name]
 
@@ -201,8 +222,7 @@ def parse_pred_tomo_path(data_log):
     logdir = [os.path.join(PARENT_PATH, l) for l in logdir]
 
     pred_tomo_path = [
-        l + "%s/%s_s2sDenoised.mrc" % (v, t)
-        for l, v, t in zip(logdir, version, tomo_name)
+        _parse_pred_path(l, v, t) for l, v, t in zip(logdir, version, tomo_name)
     ]
     data_log["pred_path"] = pred_tomo_path
 
@@ -273,6 +293,7 @@ def logdir_to_dataframe(logdir, clip_values, ignore_deconv=True):
         baseline_metrics = data_log[
             ["tomo_path", "gt_tomo_path", "use_deconv_data"]
         ].apply(lambda x: get_metrics(x[0], x[1], x[2], clip_values), axis=1)
+
     data_log["n2v_psnr"], data_log["n2v_ssim"] = zip(*baseline_metrics)
     data_log[["full_tomo_psnr", "full_tomo_ssim"]] = data_log[
         ["full_tomo_psnr", "full_tomo_ssim"]
