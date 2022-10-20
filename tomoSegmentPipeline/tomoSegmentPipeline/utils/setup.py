@@ -23,7 +23,7 @@ RAW_TOMO_PATH = (
 )
 ISONET_TOMO_PATH = (
     PARENT_PATH
-    + "data/isoNet/RAW_dataset/RAW_corrected_i30/patch_creation/result/Task511_cryoET/imagesTr"
+    + "data/isoNet/RAW_dataset/RAW_corrected/patch_creation/result/Task511_cryoET/imagesTr"
 )
 CRYOCARE_ISONET_TOMO_PATH = (
     PARENT_PATH

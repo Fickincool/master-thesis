@@ -730,7 +730,7 @@ class singleCET_ProjectedDataset(Dataset):
 
         return new_X
 
-    def clip(self, X, low=0.005, high=0.995):
+    def clip(self, X, low=0.0005, high=0.9995):
         # works with tensors =)
         return np.clip(X, np.quantile(X, low), np.quantile(X, high))
 

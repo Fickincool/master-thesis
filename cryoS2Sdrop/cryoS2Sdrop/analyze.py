@@ -87,7 +87,7 @@ def standardize(X: torch.tensor):
     return new_X
 
 
-def clip(X, low=0.005, high=0.995):
+def clip(X, low=0.0005, high=0.9995):
     # works with tensors =)
     return np.clip(X, np.quantile(X, low), np.quantile(X, high))
 
@@ -252,7 +252,10 @@ def logdir_to_dataframe(logdir, clip_values, ignore_deconv=True):
         row_vals = [model, version, dataset, hparams["loss_fn"]["alpha"]]
         for k in keys:
             try:
-                row_vals += [hparams[k]]
+                val = hparams[k]
+                if val=='null':
+                    val = None
+                row_vals += [val]
             except KeyError:
                 row_vals += [None]
         data_log.append(row_vals)

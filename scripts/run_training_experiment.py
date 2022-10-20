@@ -34,16 +34,18 @@ spinach_deconv_kwargs = {
     "highpassnyquist": 0.02,
 }
 
-""" experiment_name = "realBernoulli_convolved_comparison"
-tomogram_list = ["shrec2021_model4_dummy", "shrec2021_model2_dummy"]
-SHREC21 deconv args
-deconv_kwargs = {
+shrec_deconv_kwargs = {
     "angpix": 10,
     "defocus": 0,
     "snrfalloff": 0.3,
     "deconvstrength": 1,
     "highpassnyquist": 0.02,
 }
+
+""" experiment_name = "realBernoulli_convolved_comparison"
+tomogram_list = ["shrec2021_model4_dummy", "shrec2021_model2_dummy"]
+SHREC21 deconv args
+
 max_epochs = 400
 experiment_args = {
     "e0": {

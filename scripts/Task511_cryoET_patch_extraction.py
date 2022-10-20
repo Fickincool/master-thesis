@@ -29,7 +29,7 @@ if __name__ == "__main__":
 
     # ISONET
     tomos_base = (
-        "/home/haicu/jeronimo.carvajal/Thesis/data/isoNet/RAW_dataset/RAW_corrected_i30"
+        "/home/ubuntu/Thesis/data/isoNet/RAW_dataset/RAW_corrected"
     )
     out_dir = tomos_base + "/patch_creation/result"
 
