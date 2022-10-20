@@ -8,7 +8,6 @@
 # ============================================================================================
 
 from __future__ import print_function, division
-import os
 import torch
 import numpy as np
 from torch.utils.data import Dataset, DataLoader
@@ -68,7 +67,7 @@ def to_categorical(y, num_classes=None, dtype="float32"):
 
 class tomoSegment_dataset(Dataset):
     def __init__(self, path_data, path_target, dim_in, Ncl, Lrnd, augment_data):
-
+        
         self.path_data = path_data
         self.path_target = path_target
         self.dim_in = dim_in
@@ -88,6 +87,7 @@ class tomoSegment_dataset(Dataset):
         self.grid = self.create_grid()
 
     def __len__(self):
+        # by construction, all elements on data list have the same size
         return len(self.grid) * len(self.data_list)
 
     def __getitem__(self, idx):
@@ -138,8 +138,8 @@ class tomoSegment_dataset(Dataset):
 
     def create_grid(self):
 
-        # I got this number from inspecting a couple of the label files
-        noise_margin = 15
+        # I got this number from the padding used in Task511_cryoET_patch_extraction.py
+        noise_margin = 16
 
         centers = []
         for c in self.tomo_shape:
@@ -156,19 +156,9 @@ class tomoSegment_dataset(Dataset):
 
         return grid
 
-    def create_batch(self, index):
-        """
-        Generates batches for training and validation. In this version, the whole dataset has already been loaded into
-        memory, and batch is sampled from there.
-        INPUTS:
-          index: 
-        OUTPUT:
-          batch_data: numpy array [batch_idx, channel, z, y, x] in our case only 1 channel
-          batch_target: numpy array [batch_idx, class_idx, z, y, x] is one-hot encoded
-        """
-
-        batch_data = np.zeros((self.dim_in, self.dim_in, self.dim_in, 1))
-
+    def get_patch(self, index):
+        
+        # this index accounts for which tomogram we use
         inputID = index // len(self.grid)
 
         sample_data = self.data_list[inputID]
@@ -190,6 +180,20 @@ class tomoSegment_dataset(Dataset):
             x - self.p_in : x + self.p_in,
         ]
 
+        return patch_data, patch_target
+
+
+    def create_batch(self, index):
+        """
+        Generates batches for training and validation. In this version, the whole dataset has already been loaded into
+        memory, and batch is sampled from there.
+        INPUTS:
+          index: 
+        OUTPUT:
+          batch_data: numpy array [batch_idx, channel, z, y, x] in our case only 1 channel
+          batch_target: numpy array [batch_idx, class_idx, z, y, x] is one-hot encoded
+        """
+        patch_data, patch_target = self.get_patch(index)
         # Process the patches in order to be used by network:
         # print(patch_data)
         patch_data = (patch_data - torch.mean(patch_data)) / torch.std(
@@ -197,6 +201,7 @@ class tomoSegment_dataset(Dataset):
         )  # normalize
         patch_target_onehot = to_categorical(patch_target, self.Ncl_labels)
 
+        batch_data = np.zeros((self.dim_in, self.dim_in, self.dim_in, 1))
         # Store into batch array:
         batch_data[:, :, :, 0] = patch_data
         batch_target = patch_target_onehot  # shape is Z, Y, X, Ncl

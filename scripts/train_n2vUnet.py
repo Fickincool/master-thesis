@@ -12,6 +12,8 @@ from cryoS2Sdrop.deconvolution import tom_deconv_tomo
 import urllib
 import os
 import zipfile
+import json
+import sys
 
 import ssl
 
@@ -19,17 +21,66 @@ ssl._create_default_https_context = ssl._create_unverified_context
 
 PARENT_PATH = setup.PARENT_PATH
 
+
+def standardize(X):
+    mean = X.mean()
+    std = X.std()
+
+    new_X = (X - mean) / std
+
+    return new_X
+
+
+def scale(X):
+    scaled = (X - X.min()) / (X.max() - X.min() + 1e-8)
+    return scaled
+
+
+def clip(X, low=0.005, high=0.995):
+    # works with tensors =)
+    return np.clip(X, np.quantile(X, low), np.quantile(X, high))
+
+
+def check_deconv_kwargs(deconv_kwargs):
+    if bool(deconv_kwargs):
+        deconv_args = [
+            "angpix",
+            "defocus",
+            "snrfalloff",
+            "deconvstrength",
+            "highpassnyquist",
+        ]
+        for arg in deconv_args:
+            if arg in deconv_kwargs.keys():
+                continue
+            else:
+                raise KeyError('Missing required deconvolution argument: "%s"' % arg)
+        use_deconv_data = True
+        print("Using deconvolved data for training.")
+
+    else:
+        use_deconv_data = False
+
+    return use_deconv_data
+
+
 ###################### Input data definition ###################
 
-# cet_path = os.path.join(PARENT_PATH, 'data/raw_cryo-ET/tomo02.mrc')
-# cet_path = os.path.join(PARENT_PATH, 'data/S2SDenoising/dummy_tomograms/tomo04_deconvDummy.mrc')
-tomo_name = "shrec2021_model4_dummy_noisyGaussPoiss"
-use_deconv_data = False
+args = json.loads(sys.argv[1])
+exp_name = sys.argv[2]
+
+tomo_name = args["tomo_name"]
+epochs = args["epochs"]
+
 cet_path = os.path.join(
     PARENT_PATH, "data/S2SDenoising/dummy_tomograms/%s.mrc" % tomo_name
 )
 
+deconv_kwargs = args["deconv_kwargs"]
+use_deconv_data = check_deconv_kwargs(deconv_kwargs)
+
 gt_cet_path = None
+clip_values = True
 
 name = tomo_name
 
@@ -44,21 +95,19 @@ datagen = N2V_DataGenerator()
 # In the 'dims' parameter we specify the order of dimensions in the image files we are reading.
 imgs = datagen.load_imgs([cet_path], dims="ZYX")
 
-deconv_kwargs = {
-    "angpix": 14,
-    "defocus": 0,
-    "snrfalloff": 1,
-    "deconvstrength": 1,
-    "highpassnyquist": 0.3,
-}
-
-deconv_kwargs["vol"] = imgs[0][0, ..., 0]
-
-if len(imgs) > 1:
-    raise ValueError("Deconvolution not implemented for more than 1 training tomogram.")
+# We don't implement clipping nor standarization since N2V applies some preprocessing (normalization)
+# if clip_values:
+#     imgs[0][0, ..., 0] = clip(imgs[0][0, ..., 0])
+# imgs[0][0, ..., 0] = standardize(imgs[0][0, ..., 0])
 
 if use_deconv_data:
+    if len(imgs) > 1:
+        raise ValueError(
+            "Deconvolution not implemented for more than 1 training tomogram."
+        )
+    deconv_kwargs["vol"] = imgs[0][0, ..., 0]
     imgs[0][0, ..., 0] = tom_deconv_tomo(**deconv_kwargs)
+
 else:
     pass
 
@@ -81,8 +130,6 @@ X_val = patches[n_training:]
 
 ############################## Network configuration ##########################################
 
-epochs = 300
-
 # You can increase "train_steps_per_epoch" to get even better results at the price of longer computation.
 config = N2VConfig(
     X,
@@ -101,13 +148,14 @@ config = N2VConfig(
 
 # a name used to identify the model
 if use_deconv_data:
-    model_name = "n2v_3D_%s" % name
+    model_name = "deconv"
     # the base directory in which our model will live
-    basedir = "/home/ubuntu/Thesis/data/S2SDenoising/n2v_model_logs/%s/deconv/" % name
+    basedir = "/home/ubuntu/Thesis/data/S2SDenoising/n2v_model_logs/%s/" % name
+
 else:
-    model_name = "n2v_3D_%s" % name
+    model_name = "normal"
     # the base directory in which our model will live
-    basedir = "/home/ubuntu/Thesis/data/S2SDenoising/n2v_model_logs/%s/normal/" % name
+    basedir = "/home/ubuntu/Thesis/data/S2SDenoising/n2v_model_logs/%s/" % name
 # We are now creating our network model.
 model = N2V(config=config, name=model_name, basedir=basedir)
 
@@ -117,7 +165,7 @@ history = model.train(X, X_val)
 print(sorted(list(history.history.keys())))
 plt.figure(figsize=(16, 5))
 plot_history(history, ["loss", "val_loss"])
-outfile = os.path.join(basedir, "losses.png")
+outfile = os.path.join(basedir, "%s/losses.png" % model_name)
 plt.savefig(outfile, dpi=200)
 
 ############################# Prediction #########################
@@ -149,13 +197,10 @@ ax1[1].imshow(pred[:, yidx, :])
 ax1[2].imshow(pred[:, :, xidx])
 
 plt.tight_layout()
-outfile = os.path.join(basedir, "original_vs_N2Vdenoised.png")
+outfile = os.path.join(basedir, "%s/original_vs_N2Vdenoised.png" % model_name)
 plt.savefig(outfile, dpi=200)
 
-if use_deconv_data:
-    filename = cet_path.split("/")[-1].replace(".mrc", "_deconv_n2vDenoised")
-else:
-    filename = cet_path.split("/")[-1].replace(".mrc", "_n2vDenoised")
-filename = os.path.join(PARENT_PATH, "data/S2SDenoising/denoised/%s.mrc" % (filename))
+filename = cet_path.split("/")[-1].replace(".mrc", "_n2vDenoised")
+filename = os.path.join(basedir, "%s/%s.mrc" % (model_name, filename))
 
 write_array(pred, filename)
