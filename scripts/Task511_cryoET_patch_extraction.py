@@ -28,8 +28,13 @@ if __name__ == "__main__":
     # out_dir = '/home/haicu/jeronimo.carvajal/Thesis/data/isoNet/cryoCARE_corrected/patch_creation/result'
 
     # ISONET
+    # tomos_base = (
+    #     "/home/ubuntu/Thesis/data/isoNet/RAW_dataset/RAW_corrected"
+    # )
+
+    # F2F denoised
     tomos_base = (
-        "/home/ubuntu/Thesis/data/isoNet/RAW_dataset/RAW_corrected"
+        "/home/ubuntu/Thesis/data/S2SDenoising/F2FDenoised"
     )
     out_dir = tomos_base + "/patch_creation/result"
 
@@ -55,9 +60,9 @@ if __name__ == "__main__":
         patchloc_base_iter = join(patchloc_base, p_iter)
 
         if p_iter == "2":  # did not add patches to tomo17 in patcher iteration 2
-            tomo_ids = [2, 3, 4, 10, 32, 38]
+            tomo_ids = [2, 3, 4, 10, 32]#, 38]
         else:
-            tomo_ids = [2, 3, 4, 10, 17, 32, 38]
+            tomo_ids = [2, 3, 4, 10, 17, 32]#, 38]
         for t in tomo_ids:
             print(t)
             # raw tomogram
@@ -67,7 +72,8 @@ if __name__ == "__main__":
             # name = 'tomo%02.0d_bin4_denoised_0000_corrected.mrc'
 
             # ISONET
-            name = "tomo%02.0d_corrected.mrc"
+            # name = "tomo%02.0d_corrected.mrc"
+            name = "tomo%02.0d_s2sDenoised.mrc"
 
             image = sitk.GetArrayFromImage(sitk.ReadImage(join(tomos_base, name % t)))
             image = image - image.mean()
