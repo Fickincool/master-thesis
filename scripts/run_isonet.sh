@@ -1,4 +1,4 @@
-#!/bin/bash
+# !/bin/bash
 # conda deactivate
 # conda activate isonet
 
@@ -18,6 +18,24 @@
 # isonet.py deconv RAW_allTomos.star --snrfalloff 0.6 --deconvstrength 0.45 --highpassnyquist 0.02 --deconv_folder RAW_allTomos_deconv
 # isonet.py predict RAW_allTomos.star --model RAW_results/model_iter30.h5 --gpuID 0,1 --output_dir RAW_corrected
 
+########################################### Single image RAW tomos
+# CURRENT_FOLDER="$HOME/Thesis/data/isoNet/single_image_RAW_dataset/"
+# # Declare an array of string with type
+# declare -a StringArray=("tomo02/" "tomo04/" "tomo03/" "tomo10/" "tomo17/" "tomo32/" "tomo38/")
+
+# # Iterate the string array using for loop
+# for val in ${StringArray[@]}; do
+#     cd $CURRENT_FOLDER$val
+#     isonet.py prepare_star tomo --output_star tomo.star --pixel_size 14.08 --defocus -0.25
+#     # no deconvolution
+#     # isonet.py deconv RAW_tomos.star --snrfalloff 0.6 --deconvstrength 0.45 --highpassnyquist 0.02 --deconv_folder RAW_tomos_deconv
+#     isonet.py make_mask tomo.star --mask_folder tomo_mask --density_percentage 80 --std_percentage 50 --z_crop 0.25
+#     isonet.py extract tomo.star --subtomo_folder subtomo --subtomo_star subtomo.star --cube_size 96
+#     isonet.py refine subtomo.star --gpuID 0,1 --iterations 30 --result_dir results --learning_rate 0.0005
+#     isonet.py predict tomo.star --model results/model_iter30.h5 --gpuID 0,1 --output_dir corrected
+#     rm -rf results/data/
+
+# done
 
 
 ########################################### SHREC TOMOGRAMS ######################################
@@ -32,6 +50,25 @@
 # rm -rf SHREC_results/data/
 
 # isonet.py predict SHREC_tomos.star --model SHREC_results/model_iter30.h5 --gpuID 0,1 --output_dir SHREC_corrected
+
+CURRENT_FOLDER="$HOME/Thesis/data/isoNet/single_image_SHREC_dataset/"
+# Declare an array of string with type
+declare -a StringArray=("model_2/" "model_4/")
+
+# Iterate the string array using for loop
+for val in ${StringArray[@]}; do
+    cd $CURRENT_FOLDER$val
+    isonet.py prepare_star tomo --output_star tomo.star --pixel_size 10 --defocus 0
+    # no deconvolution
+    # isonet.py deconv RAW_tomos.star --snrfalloff 0.6 --deconvstrength 0.45 --highpassnyquist 0.02 --deconv_folder RAW_tomos_deconv
+    isonet.py make_mask tomo.star --mask_folder tomo_mask --density_percentage 80 --std_percentage 50 --z_crop 0.25
+    isonet.py extract tomo.star --subtomo_folder subtomo --subtomo_star subtomo.star --cube_size 96
+    isonet.py refine subtomo.star --gpuID 0,1 --iterations 30 --result_dir results --learning_rate 0.0005
+    isonet.py predict tomo.star --model results/model_iter30.h5 --gpuID 0,1 --output_dir corrected
+    rm -rf results/data/
+
+done
+
 
 ########################################### CRYOCARE DATASET ###############################
 # cd $HOME/Thesis/data/isoNet/cryoCARE_dataset/

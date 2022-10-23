@@ -4,18 +4,7 @@ import json
 
 experiment_name = "n2vBaseline"
 tomogram_list = [
-    "tomoPhantom_model8_noisyGaussPoissVL_Perlin",
-    "tomoPhantom_model8_noisyGaussPoissL_Perlin",
-    "tomoPhantom_model8_noisyGaussPoissM_Perlin",
-    "tomoPhantom_model8_noisyGaussPoissH_Perlin",
-    "tomoPhantom_model14_noisyGaussPoissVL_Perlin",
-    "tomoPhantom_model14_noisyGaussPoissL_Perlin",
-    "tomoPhantom_model14_noisyGaussPoissM_Perlin",
-    "tomoPhantom_model14_noisyGaussPoissH_Perlin",
-    "tomoPhantom_model16_noisyGaussPoissVL_Perlin",
-    "tomoPhantom_model16_noisyGaussPoissL_Perlin",
-    "tomoPhantom_model16_noisyGaussPoissM_Perlin",
-    "tomoPhantom_model16_noisyGaussPoissH_Perlin",
+    "tomo04_dummy"
 ]
 max_epochs = 400
 experiment_args = {"e0": {"epochs": max_epochs}}
@@ -31,14 +20,23 @@ experiment_args = {"e0": {"epochs": max_epochs}}
 #     "highpassnyquist": 0.02,
 # }
 
-# max_epochs = 400
-# experiment_args = {
-#     "e0": {"epochs": max_epochs},
-#     "e1": {"epochs": max_epochs, "deconv_kwargs": deconv_kwargs},
-# }
+spinach_deconv_kwargs = {
+    "angpix": 14.08,
+    "defocus": -0.25,
+    "snrfalloff": 0.6,
+    "deconvstrength": 0.45,
+    "highpassnyquist": 0.02,
+}
+
+max_epochs = 400
+experiment_args = {
+    "e0": {"epochs": max_epochs},
+    "e1": {"epochs": max_epochs, "deconv_kwargs": spinach_deconv_kwargs},
+}
 
 experiment_logdir = "/home/ubuntu/Thesis/data/S2SDenoising/experiment_args"
 
+# n2v_patch_shape is set to 96 on train_n2vUnet.py
 default_args = {
     "tomo_name": None,
     "deconv_kwargs": {},
