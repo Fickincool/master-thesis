@@ -303,7 +303,7 @@ experiment_args = {
 } """
 
 experiment_name = "raw_denoising"
-tomogram_list = ["tomo02", "tomo03", "tomo17"]
+tomogram_list = ["tomo38"]
 max_epochs = 50
 make_fourierSamples_beforeTraining = True
 experiment_args = {
