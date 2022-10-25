@@ -36,7 +36,7 @@ A sample script for denoising images using the proposed Fourier sampling strateg
 
 `conda config --add channels pytorch,simpleitk,anaconda,conda-forge`
 
-Afterwards run
+Afterwards, **from this folder** run
 
 `conda create --name <yourEnvNameHere> --file master-thesis/requirements_S2SdDenoising.txt`
 
