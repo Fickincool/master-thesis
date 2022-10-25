@@ -9,17 +9,11 @@
   - [4.2. Fourier space sampling](#42-fourier-space-sampling)
 - [5. Results and next steps](#5-results-and-next-steps)
 
-# Denoising of cryo-electron tomograms and its effect on cellular membrane segmentation performance.
+## 1. Main ideas
 
-This is the repo for my Master Thesis from my M. Sc. in Mathematics at TUM.
+This is the repo for my Master Thesis from my M. Sc. in Mathematics at TUM. The main idea of my work was to **explore denoising techniques to enhace visualization of cryo-electron tomograms (CET) using Deep Learning**. In the CET setting, no ground truth data is available and therefore the denoising exploration was made using two separate ways. One way implements a current denoising network based on [self-supervised learning and dropout](https://openaccess.thecvf.com/content_CVPR_2020/html/Quan_Self2Self_With_Dropout_Learning_Self-Supervised_Denoising_From_Single_Image_CVPR_2020_paper.html). The other was is a proposed mechanism that implements sampling in Fourier space to generate different versions of the noisy image which are to some degree independent and which can then be mapped under the [Noise2Noise](https://arxiv.org/abs/1803.04189) paradigm. I believe that this last implementation can be further developed to achieve significantly better denoising results because only a single CET reconstruction is needed to achieve denoising. 
 
-I think it makes sense to share this in case anyone is interested in the subject. I hope someone can learn a little bit from what I did. It would be super exciting if someone would want to develop the denoising algorithms I worked on a little further.
-
-First part of the Readme is a small description of my work, followed by installation of packages. Then I describe some details on the implementation. Afterwards, some of my results are described. And finally possible next steps for anyone interested.
-
-TODO: add examples of usage.
-
-## TODO: abstract
+One very interesting line for further development would be to apply the present method to Fluorescent Microscopy images, where no ground truth nor second noisy images can be obtained.
 
 First part of the Readme is a small description of my work, followed by installation of packages used to run the code. Then I describe some details on the implementation. Afterwards, some of my results are described. And finally possible next steps for anyone interested.
 
