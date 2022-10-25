@@ -303,34 +303,35 @@ experiment_args = {
 } """
 
 experiment_name = "raw_denoising"
-tomogram_list = ["tomo32", "tomo10"]
+tomogram_list = ["tomo02", "tomo04", "tomo03", "tomo17"]
 max_epochs = 50
 make_fourierSamples_beforeTraining = True
 experiment_args = {
-    "e0": {
-        "dataset": "singleCET_FourierDataset",
-        "epochs": max_epochs,
-        "p": 0.1,
-        "Vmask_pct":0.5,
-        "dropout_p":0.8,
-        "volumetric_scale_factor":8,
-        "comment": "Fourier dropout: 0.8",
-        "input_as_target": False,
-        "total_samples": 20,
-        "total_samples_prediction": 20,
-        "n_bernoulli_samples":6,
-        "n_bernoulli_samples_prediction":10
-    },
-    # "e1": {
-    #     "dataset": "singleCET_dataset",
+    # "e0": {
+    #     "dataset": "singleCET_FourierDataset",
     #     "epochs": max_epochs,
-    #     "p": 0.5,
+    #     "p": 0.1,
     #     "Vmask_pct":0.5,
-    #     "dropout_p":0.5,
+    #     "dropout_p":0.8,
     #     "volumetric_scale_factor":8,
-    #     "comment": "Bernoulli volMask dropout: 0.5",
-    #     "input_as_target": False
+    #     "comment": "Fourier dropout: 0.8",
+    #     "input_as_target": False,
+    #     "total_samples": 20,
+    #     "total_samples_prediction": 20,
+    #     "n_bernoulli_samples":6,
+    #     "n_bernoulli_samples_prediction":10
     # },
+    "e1": {
+        "dataset": "singleCET_dataset", # this is the real space sampling dataset
+        "epochs": 50, 
+        "p": 0.5,
+        "Vmask_pct":0.5, # this is the probability (the _pct is another misnomer, sorry) to create a volume of size volumetric_scale_factor (see parameter below)
+        "dropout_p":0.5, # dropout probability for the network
+        "volumetric_scale_factor":8, # size of the dropout volumes
+        "comment": "Bernoulli volMask only at 0.5 dropout: 0.5", # comment for the experiment
+        "Vmask_probability": 1, # Probability to use volumetric mask instead of pointwise mask (we only use volumetric),
+       "n_bernoulli_samples_prediction": 10 # number of samples to use at prediction time for each patch of the grid
+    },
 }
 
 
