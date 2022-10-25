@@ -60,9 +60,9 @@ if __name__ == "__main__":
         patchloc_base_iter = join(patchloc_base, p_iter)
 
         if p_iter == "2":  # did not add patches to tomo17 in patcher iteration 2
-            tomo_ids = [2, 3, 4, 10, 32]#, 38]
+            tomo_ids = [2, 3, 4, 10, 32, 38]
         else:
-            tomo_ids = [2, 3, 4, 10, 17, 32]#, 38]
+            tomo_ids = [2, 3, 4, 10, 17, 32, 38]
         for t in tomo_ids:
             print(t)
             # raw tomogram
@@ -73,6 +73,8 @@ if __name__ == "__main__":
 
             # ISONET
             # name = "tomo%02.0d_corrected.mrc"
+
+            # F2F denoised
             name = "tomo%02.0d_s2sDenoised.mrc"
 
             image = sitk.GetArrayFromImage(sitk.ReadImage(join(tomos_base, name % t)))
