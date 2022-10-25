@@ -63,7 +63,7 @@ $$z_p = \frac{1}{N} \sum_n f_{\theta_n} (b_{M+n}^p \odot \hat{x}_p)$$
 
 ### 4.2. Fourier space sampling
 
-![Fourier sampling strategy](images/Dataloader_sampling-Fourier.png)
+![Fourier sampling strategy](images/Dataloader_sampling-Fourier.jpg)
 
 Workflow to obtain an input batch using Bernoulli samples in Fourier space. First, the Fourier transform of the input image, $\mathcal{F}(\hat{x})$, is calculated. Then, Bernoulli masks and the inverse Fourier transform are used to obtain a fixed pool of images that will be sampled without replacement for each patch. The first half of the samples are used to obtain the input patch and the last half to obtain the target patch, shown in green and orange, respectively. This process is repeated for $N$ patches.
 
