@@ -303,7 +303,7 @@ experiment_args = {
 } """
 
 experiment_name = "raw_denoising"
-tomogram_list = ["tomo02", "tomo04", "tomo03", "tomo17"]
+tomogram_list = ["tomo10", "tomo32"]
 max_epochs = 50
 make_fourierSamples_beforeTraining = True
 experiment_args = {
@@ -319,7 +319,8 @@ experiment_args = {
     #     "total_samples": 20,
     #     "total_samples_prediction": 20,
     #     "n_bernoulli_samples":6,
-    #     "n_bernoulli_samples_prediction":10
+    #     "n_bernoulli_samples_prediction":10,
+    #     "deconv_kwargs":spinach_deconv_kwargs
     # },
     "e1": {
         "dataset": "singleCET_dataset", # this is the real space sampling dataset
