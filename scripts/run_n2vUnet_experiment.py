@@ -4,7 +4,17 @@ import json
 
 experiment_name = "n2vBaseline"
 tomogram_list = [
-    "tomo04_dummy"
+    # "tomo04", 
+    # "shrec2021_model_2",
+    # "tomo02", "shrec2021_model_4"
+    # "tomoPhantom_model8_noisyGaussPoissVL",
+    # "tomoPhantom_model8_noisyGaussPoissVL_Perlin",
+    # "tomoPhantom_model14_noisyGaussPoissVL",
+    # "tomoPhantom_model14_noisyGaussPoissVL_Perlin"
+    "tomo03",
+    "tomo10",
+    "tomo17",
+    "tomo32"
 ]
 max_epochs = 400
 experiment_args = {"e0": {"epochs": max_epochs}}
@@ -31,7 +41,7 @@ spinach_deconv_kwargs = {
 max_epochs = 400
 experiment_args = {
     "e0": {"epochs": max_epochs},
-    "e1": {"epochs": max_epochs, "deconv_kwargs": spinach_deconv_kwargs},
+    # "e1": {"epochs": max_epochs, "deconv_kwargs": spinach_deconv_kwargs},
 }
 
 experiment_logdir = "/home/ubuntu/Thesis/data/S2SDenoising/experiment_args"
@@ -47,8 +57,11 @@ default_args = {
 def main(experiment_name, args):
     args_str = json.dumps(args)
     print("Training denoising Unet for: %s \n" % args_str)
+
     os.system("python train_n2vUnet.py '%s' %s" % (args_str, experiment_name))
     print("\n\n Training finished!!! \n\n")
+
+    os.system("python predict_n2vUnet.py '%s' %s" % (args_str, experiment_name))
 
 
 if __name__ == "__main__":

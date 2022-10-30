@@ -30,6 +30,11 @@ CRYOCARE_ISONET_TOMO_PATH = (
     + "data/isoNet/cryoCARE_dataset/cryoCARE_corrected/patch_creation/result/Task511_cryoET/imagesTr"
 )
 
+DECONV_TOMO_PATH = (
+    PARENT_PATH
+    + "data/isoNet/RAW_dataset/RAW_allTomos_deconv/patch_creation/result/Task511_cryoET/imagesTr"
+)
+
 F2Fd_TOMO_PATH = (
     PARENT_PATH
     + "data/S2SDenoising/F2FDenoised/patch_creation/result/Task511_cryoET/imagesTr"
@@ -192,6 +197,29 @@ def get_paths_F2Fd(tomo_names):
     assert names_data == names_target  # check that tomograms correspond
 
     return path_data, path_target
+
+def get_paths_deconv(tomo_names):
+    """
+    Get paths for data and target tomograms denoised using our method.
+    """
+
+    path_data = []
+    path_target = []
+    for tomo_name in tomo_names:
+        path_target += glob(os.path.join(LABEL_PATH, "%s*" % tomo_name))
+
+    for x in path_target:
+        patch_name = x.split("/")[-1][0:15]
+        path_data += glob(os.path.join(DECONV_TOMO_PATH, "%s*" % patch_name))
+
+    path_data, path_target = sorted(path_data), sorted(path_target)
+
+    names_data = [x.split("/")[-1][0:15] for x in path_data]
+    names_target = [x.split("/")[-1][0:15] for x in path_target]
+
+    assert names_data == names_target  # check that tomograms correspond
+
+    return path_data, path_target
     
 
 def get_paths(tomo_names: list, input_type: str):
@@ -208,9 +236,11 @@ def get_paths(tomo_names: list, input_type: str):
         path_data, path_target = get_paths_isoNET(tomo_names)
     elif input_type == "F2Fd":
         path_data, path_target = get_paths_F2Fd(tomo_names)
+    elif input_type == "Deconv":
+        path_data, path_target = get_paths_deconv(tomo_names)
     else:
         raise NotImplementedError(
-            'Only "isoNET", "cryoCARE+isoNET", "cryoCARE", "F2Fd" and "rawCET" input type is implemented'
+            'Only "isoNET", "cryoCARE+isoNET", "cryoCARE", "F2Fd", "Deconv" and "rawCET" input type is implemented'
         )
 
     return path_data, path_target
