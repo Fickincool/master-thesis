@@ -87,6 +87,37 @@ def get_tomoPhantom_dataDict(model_no=8):
     
     return paths2dataDict(pathDict)
 
+# SHREC 21
+def get_shrec_dataDict(model_no=2):
+    raw_path = '/home/ubuntu/Thesis/data/shrec2021/model_%i/reconstruction.mrc' %model_no
+    deconv_path = '/home/ubuntu/Thesis/data/isoNet/SHREC_dataset/SHREC_tomos_deconv/model_%i.mrc' %model_no
+    if model_no==2:
+        cryoCARE_path = '/home/ubuntu/Thesis/data/shrec2021/model_%i/cryoCARE_reconstruction.mrc' %model_no
+    else:
+        cryoCARE_path = None
+    N2V_path = '/home/ubuntu/Thesis/data/S2SDenoising/n2v_model_logs/shrec2021_model_%i/normal/reconstruction_n2vDenoised.mrc' %model_no    
+    S2Sd_path = '/home/ubuntu/Thesis/data/S2SDenoising/model_logs/shrec2021_model_%i/samplingStrategy_comparison/version_1/reconstruction_s2sDenoised.mrc' %model_no
+    F2Fd_path = '/home/ubuntu/Thesis/data/S2SDenoising/model_logs/shrec2021_model_%i/samplingStrategy_comparison/version_0/reconstruction_s2sDenoised.mrc' %model_no
+    if model_no in [2]:
+        isoNet_path = '/home/ubuntu/Thesis/data/isoNet/single_image_SHREC_dataset/model_%i/corrected/model_%i_corrected.mrc' %(model_no, model_no)
+    else:
+        print("WARNING: comparing to isoNet trained on many images.")
+        isoNet_path = '/home/ubuntu/Thesis/data/isoNet/SHREC_dataset/SHREC_corrected/model_%i_corrected.mrc' %model_no
+    gt_path = '/home/ubuntu/Thesis/data/shrec2021/model_%i/grandmodel.mrc' %model_no
+    
+    pathDict = {
+        'raw_path':raw_path,
+        'deconv_path':deconv_path,
+        'cryoCARE_path':cryoCARE_path,
+        'N2V_path':N2V_path,
+        'S2Sd_path':S2Sd_path,
+        'F2Fd_path':F2Fd_path,
+        'isoNet_path':isoNet_path,
+        'gt_path':gt_path,
+    }
+    
+    return paths2dataDict(pathDict)
+
 # spinach
 def get_spinach_dataDict(tomo_no=2, keys=None):
     raw_path = '/home/ubuntu/Thesis/data/raw_cryo-ET/tomo%02i.mrc' %tomo_no

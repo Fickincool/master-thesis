@@ -11,10 +11,11 @@ tomogram_list = [
     # "tomoPhantom_model8_noisyGaussPoissVL_Perlin",
     # "tomoPhantom_model14_noisyGaussPoissVL",
     # "tomoPhantom_model14_noisyGaussPoissVL_Perlin"
-    "tomo03",
-    "tomo10",
-    "tomo17",
-    "tomo32"
+    # "tomo03",
+    # "tomo10",
+    # "tomo17",
+    # "tomo32",
+    "tomo38"
 ]
 max_epochs = 400
 experiment_args = {"e0": {"epochs": max_epochs}}
