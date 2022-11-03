@@ -37,10 +37,15 @@ if __name__ == "__main__":
     #     "/home/ubuntu/Thesis/data/S2SDenoising/F2FDenoised"
     # )
 
-    # Deconv only
+    # S2S denoised
     tomos_base = (
-        "/home/ubuntu/Thesis/data/isoNet/RAW_dataset/RAW_allTomos_deconv"
+        "/home/ubuntu/Thesis/data/S2SDenoising/S2SDenoised"
     )
+
+    # Deconv only
+    # tomos_base = (
+    #     "/home/ubuntu/Thesis/data/isoNet/RAW_dataset/RAW_allTomos_deconv"
+    # )
 
     out_dir = tomos_base + "/patch_creation/result"
 
@@ -83,8 +88,11 @@ if __name__ == "__main__":
             # F2F denoised
             # name = "tomo%02.0d_s2sDenoised.mrc"
 
+            # S2S denoised
+            name = "tomo%02.0d_s2sDenoised.mrc"
+
             # Deonv tomogram
-            name = 'tomo%02.0d.mrc'
+            # name = 'tomo%02.0d.mrc'
 
             image = sitk.GetArrayFromImage(sitk.ReadImage(join(tomos_base, name % t)))
             image = image - image.mean()
