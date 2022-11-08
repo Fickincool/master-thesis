@@ -22,9 +22,9 @@ train_tomos = ["tomo02", "tomo03", "tomo17"]
 concat_train_ids = sorted([s.replace("tomo", "") for s in train_tomos])
 concat_train_ids = "-".join(concat_train_ids)
 
-for i in range(2):
+for i in range(3):
     # for input_type in ["rawCET", "cryoCARE", "isoNET", "cryoCARE+isoNET", "F2Fd", "Deconv"]:
-    for input_type in ["S2Sd"]:
+    for input_type in ["N2V"]:
         for nPatches in range(4, 34, 4):
 
             tb_logdir = os.path.join(

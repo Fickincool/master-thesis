@@ -38,8 +38,13 @@ if __name__ == "__main__":
     # )
 
     # S2S denoised
+    # tomos_base = (
+    #     "/home/ubuntu/Thesis/data/S2SDenoising/S2SDenoised"
+    # )
+
+    # N2V denoised
     tomos_base = (
-        "/home/ubuntu/Thesis/data/S2SDenoising/S2SDenoised"
+        "/home/ubuntu/Thesis/data/S2SDenoising/n2v_model_logs"
     )
 
     # Deconv only
@@ -89,7 +94,11 @@ if __name__ == "__main__":
             # name = "tomo%02.0d_s2sDenoised.mrc"
 
             # S2S denoised
-            name = "tomo%02.0d_s2sDenoised.mrc"
+            # name = "tomo%02.0d_s2sDenoised.mrc"
+
+
+            # N2V denoised
+            name = "tomo%02.0d/normal/tomo%s_n2vDenoised.mrc" %(t, '%02.0d') # nasty workaround
 
             # Deonv tomogram
             # name = 'tomo%02.0d.mrc'

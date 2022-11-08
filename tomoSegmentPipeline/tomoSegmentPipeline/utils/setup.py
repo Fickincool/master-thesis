@@ -35,6 +35,11 @@ DECONV_TOMO_PATH = (
     + "data/isoNet/RAW_dataset/RAW_allTomos_deconv/patch_creation/result/Task511_cryoET/imagesTr"
 )
 
+N2V_TOMO_PATH = (
+    PARENT_PATH
+    + "data/S2SDenoising/n2v_model_logs/patch_creation/result/Task511_cryoET/imagesTr"
+)
+
 F2Fd_TOMO_PATH = (
     PARENT_PATH
     + "data/S2SDenoising/F2FDenoised/patch_creation/result/Task511_cryoET/imagesTr"
@@ -250,6 +255,29 @@ def get_paths_deconv(tomo_names):
 
     return path_data, path_target
     
+def get_paths_N2V(tomo_names):
+    """
+    Get paths for data and target tomograms denoised using our method.
+    """
+
+    path_data = []
+    path_target = []
+    for tomo_name in tomo_names:
+        path_target += glob(os.path.join(LABEL_PATH, "%s*" % tomo_name))
+
+    for x in path_target:
+        patch_name = x.split("/")[-1][0:15]
+        path_data += glob(os.path.join(N2V_TOMO_PATH, "%s*" % patch_name))
+
+    path_data, path_target = sorted(path_data), sorted(path_target)
+
+    names_data = [x.split("/")[-1][0:15] for x in path_data]
+    names_target = [x.split("/")[-1][0:15] for x in path_target]
+
+    assert names_data == names_target  # check that tomograms correspond
+
+    return path_data, path_target
+
 
 def get_paths(tomo_names: list, input_type: str):
 
@@ -267,11 +295,13 @@ def get_paths(tomo_names: list, input_type: str):
         path_data, path_target = get_paths_F2Fd(tomo_names)
     elif input_type == "S2Sd":
         path_data, path_target = get_paths_S2Sd(tomo_names)
+    elif input_type == "N2V":
+        path_data, path_target = get_paths_N2V(tomo_names)
     elif input_type == "Deconv":
         path_data, path_target = get_paths_deconv(tomo_names)
     else:
         raise NotImplementedError(
-            'Only "isoNET", "cryoCARE+isoNET", "cryoCARE", "F2Fd", "S2Sd", "Deconv" and "rawCET" input type is implemented'
+            'Only "isoNET", "cryoCARE+isoNET", "cryoCARE", "F2Fd", "S2Sd", "N2V", "Deconv" and "rawCET" input type is implemented'
         )
 
     return path_data, path_target
