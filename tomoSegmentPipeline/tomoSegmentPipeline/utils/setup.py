@@ -215,7 +215,7 @@ def get_paths_S2Sd(tomo_names):
 
     for x in path_target:
         patch_name = x.split("/")[-1][0:15]
-        path_data += glob(os.path.join(F2Fd_TOMO_PATH, "%s*" % patch_name))
+        path_data += glob(os.path.join(S2Sd_TOMO_PATH, "%s*" % patch_name))
 
     path_data, path_target = sorted(path_data), sorted(path_target)
 
