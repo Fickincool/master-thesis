@@ -98,11 +98,11 @@ def get_shrec_dataDict(model_no=2):
     N2V_path = '/home/ubuntu/Thesis/data/S2SDenoising/n2v_model_logs/shrec2021_model_%i/normal/reconstruction_n2vDenoised.mrc' %model_no    
     S2Sd_path = '/home/ubuntu/Thesis/data/S2SDenoising/model_logs/shrec2021_model_%i/samplingStrategy_comparison/version_1/reconstruction_s2sDenoised.mrc' %model_no
     F2Fd_path = '/home/ubuntu/Thesis/data/S2SDenoising/model_logs/shrec2021_model_%i/samplingStrategy_comparison/version_0/reconstruction_s2sDenoised.mrc' %model_no
-    if model_no in [2]:
-        isoNet_path = '/home/ubuntu/Thesis/data/isoNet/single_image_SHREC_dataset/model_%i/corrected/model_%i_corrected.mrc' %(model_no, model_no)
-    else:
-        print("WARNING: comparing to isoNet trained on many images.")
-        isoNet_path = '/home/ubuntu/Thesis/data/isoNet/SHREC_dataset/SHREC_corrected/model_%i_corrected.mrc' %model_no
+    # if model_no in [2]:
+    #     isoNet_path = '/home/ubuntu/Thesis/data/isoNet/single_image_SHREC_dataset/model_%i/corrected/model_%i_corrected.mrc' %(model_no, model_no)
+    # else:
+    print("WARNING: comparing to isoNet trained on many images.")
+    isoNet_path = '/home/ubuntu/Thesis/data/isoNet/SHREC_dataset/SHREC_corrected/model_%i_corrected.mrc' %model_no
     gt_path = '/home/ubuntu/Thesis/data/shrec2021/model_%i/grandmodel.mrc' %model_no
     
     pathDict = {
@@ -133,11 +133,11 @@ def get_spinach_dataDict(tomo_no=2, keys=None):
     #     deconv_F2Fd_path = None
     
     # if tomo_no in [2, 4]:
-    if False:
-        isoNet_path = '/home/ubuntu/Thesis/data/isoNet/single_image_RAW_dataset/tomo%02i/corrected/tomo%02i_corrected.mrc' %(tomo_no, tomo_no)
-    else:
-        print("WARNING: comparing to isoNet trained on many images.")
-        isoNet_path = '/home/ubuntu/Thesis/data/isoNet/RAW_dataset/RAW_corrected/tomo%02i_corrected.mrc' %tomo_no
+    # if False:
+    #     isoNet_path = '/home/ubuntu/Thesis/data/isoNet/single_image_RAW_dataset/tomo%02i/corrected/tomo%02i_corrected.mrc' %(tomo_no, tomo_no)
+    # else:
+    print("WARNING: comparing to isoNet trained on many images.")
+    isoNet_path = '/home/ubuntu/Thesis/data/isoNet/RAW_dataset/RAW_corrected/tomo%02i_corrected.mrc' %tomo_no
     gt_path = None
 
     pathDict = {
